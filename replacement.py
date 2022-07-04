@@ -28,3 +28,17 @@ class Replacement:
             old_val=self.old_val,
             new_val=self.new_val,
         )
+
+
+class Mutation:
+    def __init__(
+        self,
+        mutator_id: str,
+        mutator_description: str,
+        line_number: int,
+        replacement: Replacement,
+    ):
+        self.id = mutator_id  # name of mutation ran on line
+        self.description = mutator_description  # describes mutation
+        self.line = line_number  # line number of mutated line
+        self.replacement = replacement  # info on old and new values

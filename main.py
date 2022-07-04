@@ -1,6 +1,6 @@
-from file_parser import Meta
+from file_parser import Parser
 
 if __name__ == "__main__":
-    files = Meta("file_parser.py")
-    for tup in files.all_mutations:
-        print(repr(tup[2]))
+    files = Parser("replacement.py")
+    for mut in files.all_mutations:
+        print(repr(mut.replacement))
