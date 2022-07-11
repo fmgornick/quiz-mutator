@@ -30,6 +30,10 @@ class Replacement:
         )
 
 
+def reverse(r: Replacement) -> Replacement:
+    return Replacement(r.start_col, r.end_col, r.new_val, r.old_val)
+
+
 class Mutation:
     def __init__(
         self,

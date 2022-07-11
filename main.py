@@ -1,6 +1,6 @@
-from file_parser import Parser
+from mutation_generator import MutatedFiles
 
 if __name__ == "__main__":
-    files = Parser("replacement.py")
+    files = MutatedFiles("replacement.py")
     for mut in files.all_mutations:
         print(repr(mut.replacement))
