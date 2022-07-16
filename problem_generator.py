@@ -1,3 +1,4 @@
+import os
 import random
 from typing import Dict, List, Tuple
 
@@ -58,7 +59,10 @@ class ProblemSet:
         prompts: Dict[str, str],
         distractors: List[Mutation],
     ):
-        self.id = file.mutation.id + str(mutation_num)
+        self.id = os.path.basename(file.filename).capitalize() + str(mutation_num)
+        self.content = file.content
+        self.mutation = file.mutation
+
         self.reorder = Reorder(file, mutation_num, prompts["reorder"])
         self.findMutation = FindMutation(
             file, mutation_num, prompts["find mutation"], distractors

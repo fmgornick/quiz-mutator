@@ -10,7 +10,8 @@ from replacement import Mutation
 # - contents of mutated file
 # - info about mutation
 class MutatedFile:
-    def __init__(self, content: List[str], mut: Mutation):
+    def __init__(self, filename: str, content: List[str], mut: Mutation):
+        self.filename = filename
         self.content = content
         self.content[mut.line] = mut.replacement.apply(self.content[mut.line])
         self.mutation = mut
@@ -38,13 +39,17 @@ class MutatedFiles:
             for mut in self.all_mutations:
                 if mut.id not in mutated_files:
                     mutated_files[mut.id] = []
-                mutated_files[mut.id].append(MutatedFile(self.file.content, mut))
+                mutated_files[mut.id].append(
+                    MutatedFile(self.file.filename, self.file.content, mut)
+                )
 
         else:
             randoms = random.sample(range(len(self.all_mutations)), 10)
             for i in randoms:
                 mut = self.all_mutations[i]
-                mutated_files[mut.id].append(MutatedFile(self.file.content, mut))
+                mutated_files[mut.id].append(
+                    MutatedFile(self.file.filename, self.file.content, mut)
+                )
 
         return mutated_files
 

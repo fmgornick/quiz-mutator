@@ -1,11 +1,9 @@
 import os
 import shutil
 import xml.dom.minidom as md
-from typing import List
 
 from mutator import get_mutators
-from problem_generator import Quiz
-from replacement import Replacement
+from problem_generator import ProblemSet, Quiz
 
 
 class QTI:
@@ -44,46 +42,16 @@ class QTI:
 
         os.mkdir("package/items")
 
-    def new_section(
-        self,
-        mutator_id: str,
-        section_name: str,
-        content: List[str],
-        replacement: Replacement,
-    ):
-        if not os.path.isdir("package/items/" + mutator_id):
-            os.mkdir("package/items/" + mutator_id)
+    def new_section(self, set: ProblemSet):
+        if not os.path.isdir("package/items/" + set.mutation.id):
+            os.mkdir("package/items/" + set.mutation.id)
 
-        os.mkdir("package/items/" + mutator_id + "/" + section_name)
+        os.mkdir("package/items/" + set.mutation.id + "/" + set.id)
 
-        mutators = get_mutators()
-        mutations = []
-
-        for line in content:
-            for _, mutator in mutators.items():
-                mutations += mutator.find_mutations(line)
-
-        add_dependencies(mutator_id, section_name, content)
-        order(
-            mutator_id,
-            section_name,
-            section_name + " Ordering Problem",
-            content,
-            self.order_prompt,
-        )
-        find_mutation(
-            mutator_id,
-            section_name,
-            section_name + " Find Mutation Problem",
-            content,
-            self.correct,
-        )
-        fix_mutation(
-            mutator_id,
-            section_name,
-            section_name + " Fix Mutation Problem",
-            replacement,
-        )
+        add_dependencies(set)
+        order(set)
+        find_mutation(set)
+        fix_mutation(set)
 
     def make_zip(self, directory, zip="qti"):
         make_pretty(directory)
@@ -92,7 +60,7 @@ class QTI:
         shutil.rmtree(directory)
 
 
-def make_pretty(directory):
+def make_pretty(directory: str):
     for filename in os.listdir(directory):
         if os.path.isdir(os.path.join(directory, filename)):
             make_pretty(os.path.join(directory, filename))
@@ -103,7 +71,7 @@ def make_pretty(directory):
             f.close()
 
 
-def add_dependencies(mutator_id, name, content):
+def add_dependencies(set: ProblemSet):
     manifest = md.parse("utils/package/imsmanifest.xml")
     ids = ["Order", "FindMutation", "FixMutation"]
 
@@ -111,21 +79,21 @@ def add_dependencies(mutator_id, name, content):
         resource = manifest.createElement("resource")
         mhref = manifest.createElement("file")
 
-        resource.setAttribute("identifier", mutator_id + name + id)
+        resource.setAttribute("identifier", set.mutation.id + set.id + id)
         resource.setAttribute("type", "imsqti_item_xmlv2p2")
         resource.setAttribute(
-            "href", "items/" + mutator_id + "/" + name + "/" + id + ".xml"
+            "href", "items/" + set.mutation.id + "/" + set.id + "/" + id + ".xml"
         )
 
         mhref.setAttribute(
-            "href", "items/" + mutator_id + "/" + name + "/" + id + ".xml"
+            "href", "items/" + set.mutation.id + "/" + set.id + "/" + id + ".xml"
         )
 
         resource.appendChild(mhref)
         manifest.getElementsByTagName("resources")[0].appendChild(resource)
 
         dependency = manifest.createElement("dependency")
-        dependency.setAttribute("identifierref", mutator_id + name + id)
+        dependency.setAttribute("identifierref", set.mutation.id + set.id + id)
         manifest.getElementsByTagName("resource")[0].appendChild(dependency)
 
     f = open("utils/package/imsmanifest.xml", "w")
@@ -136,22 +104,22 @@ def add_dependencies(mutator_id, name, content):
     testPart = assessment.getElementsByTagName("testPart")[0]
 
     section = assessment.createElement("assessmentSection")
-    section.setAttribute("identifier", mutator_id + name)
-    section.setAttribute("title", mutator_id + " " + name + " section")
+    section.setAttribute("identifier", set.mutation.id + set.id)
+    section.setAttribute("title", set.mutation.id + " " + set.id + " section")
     section.setAttribute("visible", "false")
 
     for id in ids:
         item = assessment.createElement("assessmentItemRef")
-        item.setAttribute("identifier", mutator_id + name + id)
+        item.setAttribute("identifier", set.mutation.id + set.id + id)
         item.setAttribute(
-            "href", "items/" + mutator_id + "/" + name + "/" + id + ".xml"
+            "href", "items/" + set.mutation.id + "/" + set.id + "/" + id + ".xml"
         )
 
         weight = assessment.createElement("weight")
-        weight.setAttribute("identifier", mutator_id + name + id + "Weight")
+        weight.setAttribute("identifier", set.mutation.id + set.id + id + "Weight")
 
         if id == "Order":
-            weight.setAttribute("value", str(len(content)))
+            weight.setAttribute("value", str(len(set.content)))
         else:
             weight.setAttribute("value", "2")
 
@@ -163,7 +131,7 @@ def add_dependencies(mutator_id, name, content):
     total_lines = int(
         assessment.getElementsByTagName("baseValue")[0].firstChild.nodeValue
     )
-    total_lines += len(content)
+    total_lines += len(set.content)
     assessment.getElementsByTagName("baseValue")[0].firstChild.nodeValue = str(
         total_lines
     )
@@ -173,8 +141,10 @@ def add_dependencies(mutator_id, name, content):
     f.close()
 
 
-def order(mutator_id, name, question, content, prompt):
-    newfile = "utils/package/items/" + mutator_id + "/" + name + "/" + "Order.xml"
+def order(set: ProblemSet):
+    newfile = (
+        "utils/package/items/" + set.mutation.id + "/" + set.id + "/" + "Order.xml"
+    )
     fr = open("utils/templates/order_template.xml", "r")
     fw = open(newfile, "w")
     for line in fr:
@@ -184,17 +154,21 @@ def order(mutator_id, name, question, content, prompt):
 
     file = md.parse(newfile)
 
-    file.getElementsByTagName("assessmentItem")[0].setAttribute("title", question)
     file.getElementsByTagName("assessmentItem")[0].setAttribute(
-        "identifier", mutator_id + name
+        "title", set.id + " Ordering Problem"
     )
-    file.getElementsByTagName("prompt")[0].appendChild(file.createTextNode(prompt))
+    file.getElementsByTagName("assessmentItem")[0].setAttribute(
+        "identifier", set.mutation.id + set.id
+    )
+    file.getElementsByTagName("prompt")[0].appendChild(
+        file.createTextNode(set.reorder.prompt)
+    )
 
     matchIDs = file.getElementsByTagName("correctResponse")[0]
     mapping = file.getElementsByTagName("mapping")[0]
     qLines = file.getElementsByTagName("simpleMatchSet")[0]
     aLines = file.getElementsByTagName("simpleMatchSet")[1]
-    for i, line in enumerate(content):
+    for i, line in enumerate(set.content):
         matchID = file.createElement("value")
         matchID.appendChild(file.createTextNode("q" + str(i + 1) + " a" + str(i + 1)))
 
@@ -222,9 +196,14 @@ def order(mutator_id, name, question, content, prompt):
     f.close()
 
 
-def find_mutation(mutator_id, name, question, content, correct):
+def find_mutation(set: ProblemSet):
     newfile = (
-        "utils/package/items/" + mutator_id + "/" + name + "/" + "FindMutation.xml"
+        "utils/package/items/"
+        + set.mutation.id
+        + "/"
+        + set.id
+        + "/"
+        + "FindMutation.xml"
     )
     fr = open("utils/templates/find_mutation_template.xml", "r")
     fw = open(newfile, "w")
@@ -235,22 +214,24 @@ def find_mutation(mutator_id, name, question, content, correct):
 
     file = md.parse(newfile)
 
-    file.getElementsByTagName("assessmentItem")[0].setAttribute("title", question)
     file.getElementsByTagName("assessmentItem")[0].setAttribute(
-        "identifier", mutator_id + name
+        "title", set.id + " Find Mutation Problem"
+    )
+    file.getElementsByTagName("assessmentItem")[0].setAttribute(
+        "identifier", set.mutation.id + set.id
     )
 
-    if name == "Bubblesort8":
-        print(content[1])
-        print(correct[1])
+    if set.id == "Bubblesort8":
+        print(set.content[1])
+        print(set.findMutation.answer[1])
     choices = file.getElementsByTagName("choiceInteraction")[0]
 
     mutators = get_mutators()
-    for i, line in enumerate(content):
+    for i, line in enumerate(set.content):
         for _, mutator in mutators.items():
             if len(mutator.find_mutations(line)) > 0:
                 choice = file.createElement("simpleChoice")
-                if line != correct[i]:
+                if line != set.findMutation.answer[i]:
                     choice.setAttribute("identifier", "correct")
                 else:
                     choice.setAttribute("identifier", "wrong" + str(i))
@@ -267,11 +248,16 @@ def find_mutation(mutator_id, name, question, content, correct):
     f.close()
 
 
-def fix_mutation(mutator_id, name, question, replacement):
-    old_val = replacement.new_val
-    new_val = replacement.old_val
+def fix_mutation(set: ProblemSet):
 
-    newfile = "utils/package/items/" + mutator_id + "/" + name + "/" + "FixMutation.xml"
+    newfile = (
+        "utils/package/items/"
+        + set.mutation.id
+        + "/"
+        + set.id
+        + "/"
+        + "FixMutation.xml"
+    )
     fr = open("utils/templates/fix_mutation_template.xml", "r")
     fw = open(newfile, "w")
     for line in fr:
@@ -281,13 +267,19 @@ def fix_mutation(mutator_id, name, question, replacement):
 
     file = md.parse(newfile)
 
-    file.getElementsByTagName("assessmentItem")[0].setAttribute("title", question)
     file.getElementsByTagName("assessmentItem")[0].setAttribute(
-        "identifier", mutator_id + name
+        "title", set.id + " Fix Mutation Problem"
+    )
+    file.getElementsByTagName("assessmentItem")[0].setAttribute(
+        "identifier", set.mutation.id + set.id
     )
 
-    file.getElementsByTagName("gapText")[0].appendChild(file.createTextNode(old_val))
-    file.getElementsByTagName("gapText")[1].appendChild(file.createTextNode(new_val))
+    file.getElementsByTagName("gapText")[0].appendChild(
+        file.createTextNode(set.fixMutation.answer.old_val)
+    )
+    file.getElementsByTagName("gapText")[1].appendChild(
+        file.createTextNode(set.fixMutation.answer.old_val)
+    )
 
     f = open(newfile, "w")
     f.write(file.toxml())
