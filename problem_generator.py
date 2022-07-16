@@ -1,6 +1,7 @@
 import os
 import random
-from typing import Dict, List, Tuple
+from pathlib import Path
+from typing import Dict, List
 
 from mutation_generator import MutatedFile, MutatedFiles
 from replacement import Mutation, Replacement, reverse
@@ -32,6 +33,7 @@ class Quiz:
         for list in files.mutated_files.values():
             for i, file in enumerate(list):
                 self.sets.append(ProblemSet(file, i, prompts, distractors))
+                print(file.mutation.replacement)
 
 
 # creates 4 different distractors of random types
@@ -59,7 +61,7 @@ class ProblemSet:
         prompts: Dict[str, str],
         distractors: List[Mutation],
     ):
-        self.id = os.path.basename(file.filename).capitalize() + str(mutation_num)
+        self.id = Path(file.filename).stem.capitalize() + str(mutation_num)
         self.content = file.content
         self.mutation = file.mutation
 
@@ -68,7 +70,7 @@ class ProblemSet:
             file, mutation_num, prompts["find mutation"], distractors
         )
         self.classifyMutation = ClassifyMutation(
-            file, mutation_num, prompts["classifyMutation"], distractors
+            file, mutation_num, prompts["classify mutation"], distractors
         )
         self.fixMutation = FixMutation(
             file, mutation_num, prompts["fix mutation"], distractors

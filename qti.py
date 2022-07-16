@@ -11,21 +11,21 @@ class QTI:
         self,
         quiz: Quiz,
         bank_title: str = "question bank",
-        zip: str = "qti.zip",
+        zip: str = "qti",
     ):
         self.quiz = quiz
         self.bank_title = bank_title
         self.zip = zip
 
         os.mkdir("package")
-        fr = open("templates/manifest_template.xml", "r")
+        fr = open("qti_templates/manifest_template.xml", "r")
         fw = open("package/imsmanifest.xml", "w")
         for line in fr:
             fw.write(line)
         fr.close()
         fw.close()
 
-        fr = open("templates/assessment_template.xml", "r")
+        fr = open("qti_templates/assessment_template.xml", "r")
         fw = open("package/assessment.xml", "w")
         for line in fr:
             fw.write(line)
@@ -42,22 +42,24 @@ class QTI:
 
         os.mkdir("package/items")
 
-    def new_section(self, set: ProblemSet):
-        if not os.path.isdir("package/items/" + set.mutation.id):
-            os.mkdir("package/items/" + set.mutation.id)
+    def make_quiz(self):
+        for set in self.quiz.sets:
+            new_section(set)
+        make_pretty("package")
+        shutil.make_archive(self.zip, "zip", "package")
+        shutil.rmtree("package")
 
-        os.mkdir("package/items/" + set.mutation.id + "/" + set.id)
 
-        add_dependencies(set)
-        order(set)
-        find_mutation(set)
-        fix_mutation(set)
+def new_section(set: ProblemSet):
+    if not os.path.isdir("package/items/" + set.mutation.id):
+        os.mkdir("package/items/" + set.mutation.id)
 
-    def make_zip(self, directory, zip="qti"):
-        make_pretty(directory)
+    os.mkdir("package/items/" + set.mutation.id + "/" + set.id)
 
-        shutil.make_archive(zip, "zip", directory)
-        shutil.rmtree(directory)
+    add_dependencies(set)
+    order(set)
+    find_mutation(set)
+    fix_mutation(set)
 
 
 def make_pretty(directory: str):
@@ -72,7 +74,7 @@ def make_pretty(directory: str):
 
 
 def add_dependencies(set: ProblemSet):
-    manifest = md.parse("utils/package/imsmanifest.xml")
+    manifest = md.parse("package/imsmanifest.xml")
     ids = ["Order", "FindMutation", "FixMutation"]
 
     for id in ids:
@@ -96,11 +98,11 @@ def add_dependencies(set: ProblemSet):
         dependency.setAttribute("identifierref", set.mutation.id + set.id + id)
         manifest.getElementsByTagName("resource")[0].appendChild(dependency)
 
-    f = open("utils/package/imsmanifest.xml", "w")
+    f = open("package/imsmanifest.xml", "w")
     f.write(manifest.toxml())
     f.close()
 
-    assessment = md.parse("utils/package/assessment.xml")
+    assessment = md.parse("package/assessment.xml")
     testPart = assessment.getElementsByTagName("testPart")[0]
 
     section = assessment.createElement("assessmentSection")
@@ -136,16 +138,14 @@ def add_dependencies(set: ProblemSet):
         total_lines
     )
 
-    f = open("utils/package/assessment.xml", "w")
+    f = open("package/assessment.xml", "w")
     f.write(assessment.toxml())
     f.close()
 
 
 def order(set: ProblemSet):
-    newfile = (
-        "utils/package/items/" + set.mutation.id + "/" + set.id + "/" + "Order.xml"
-    )
-    fr = open("utils/templates/order_template.xml", "r")
+    newfile = "package/items/" + set.mutation.id + "/" + set.id + "/" + "Order.xml"
+    fr = open("qti_templates/order_template.xml", "r")
     fw = open(newfile, "w")
     for line in fr:
         fw.write(line)
@@ -198,14 +198,9 @@ def order(set: ProblemSet):
 
 def find_mutation(set: ProblemSet):
     newfile = (
-        "utils/package/items/"
-        + set.mutation.id
-        + "/"
-        + set.id
-        + "/"
-        + "FindMutation.xml"
+        "package/items/" + set.mutation.id + "/" + set.id + "/" + "FindMutation.xml"
     )
-    fr = open("utils/templates/find_mutation_template.xml", "r")
+    fr = open("qti_templates/find_mutation_template.xml", "r")
     fw = open(newfile, "w")
     for line in fr:
         fw.write(line)
@@ -221,9 +216,6 @@ def find_mutation(set: ProblemSet):
         "identifier", set.mutation.id + set.id
     )
 
-    if set.id == "Bubblesort8":
-        print(set.content[1])
-        print(set.findMutation.answer[1])
     choices = file.getElementsByTagName("choiceInteraction")[0]
 
     mutators = get_mutators()
@@ -251,14 +243,9 @@ def find_mutation(set: ProblemSet):
 def fix_mutation(set: ProblemSet):
 
     newfile = (
-        "utils/package/items/"
-        + set.mutation.id
-        + "/"
-        + set.id
-        + "/"
-        + "FixMutation.xml"
+        "package/items/" + set.mutation.id + "/" + set.id + "/" + "FixMutation.xml"
     )
-    fr = open("utils/templates/fix_mutation_template.xml", "r")
+    fr = open("qti_templates/fix_mutation_template.xml", "r")
     fw = open(newfile, "w")
     for line in fr:
         fw.write(line)

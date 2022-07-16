@@ -1,6 +1,9 @@
 from mutation_generator import MutatedFiles
+from problem_generator import Quiz
+from qti import QTI
 
 if __name__ == "__main__":
-    files = MutatedFiles("replacement.py")
-    for mut in files.all_mutations:
-        print(repr(mut.replacement))
+    files = MutatedFiles("main.py")
+    quiz = Quiz(files)
+    qti = QTI(quiz)
+    qti.make_quiz()

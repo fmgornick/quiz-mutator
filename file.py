@@ -68,5 +68,5 @@ class File:
 
             # return line to mutate
             if not in_comment:
-                print(stripped)
+                # print(stripped)
                 yield stripped
