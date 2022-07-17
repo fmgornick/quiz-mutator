@@ -33,7 +33,7 @@ class Quiz:
         for list in files.mutated_files.values():
             for i, file in enumerate(list):
                 self.sets.append(ProblemSet(file, i, prompts, distractors))
-                print(file.mutation.replacement)
+                # print(file.content)
 
 
 # creates 4 different distractors of random types

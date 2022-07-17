@@ -1,3 +1,4 @@
+import copy
 import random
 from typing import Dict, List
 
@@ -12,7 +13,7 @@ from replacement import Mutation
 class MutatedFile:
     def __init__(self, filename: str, content: List[str], mut: Mutation):
         self.filename = filename
-        self.content = content
+        self.content = copy.deepcopy(content)
         self.content[mut.line] = mut.replacement.apply(self.content[mut.line])
         self.mutation = mut
 
