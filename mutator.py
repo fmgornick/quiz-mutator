@@ -37,6 +37,7 @@ class SimplePattern:
 class Mutator:
     mutator_id = "mutator"
     description = "generic mutator"
+    pattern: SimplePattern
 
     def find_mutations(self, line: str) -> List[Replacement]:
         return [Replacement(0, 0, "", "")]

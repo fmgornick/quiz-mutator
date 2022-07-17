@@ -1,4 +1,6 @@
-# coding=utf-8
+import random
+
+from mutator import Mutator, SimplePattern, get_mutators
 
 
 class Replacement:
@@ -46,3 +48,32 @@ class Mutation:
         self.description = mutator_description  # describes mutation
         self.line = line_number  # line number of mutated line
         self.replacement = replacement  # info on old and new values
+
+
+def random_mutaor(omit: List[str], max_lines: int) -> Mutation:
+    mutators = get_mutators()
+    mutator = random.choice(list(mutators.values()))
+    if len(mutators) <= len(omit):
+        return Mutation(
+            mutator.mutator_id,
+            mutator.description,
+            random.randrange(0, max_lines),
+            random_replacement(mutator),
+        )
+
+
+def random_replacement(mutator: Mutator) -> Replacement:
+    if mutator.mutator_id in [
+        "lineDeletion",
+        "decimalNumberLiteral",
+        "hexNumberLiteral",
+    ]:
+        pass
+    else:
+        start_col = random.randrange(0, 100)
+        old_val, new_vals = random.choice(
+            list(mutator.pattern.replacement_patterns.items())
+        )
+        new_val = random.choice(new_vals)
+
+        return Replacement(start_col, start_col + len(old_val), old_val, new_val)

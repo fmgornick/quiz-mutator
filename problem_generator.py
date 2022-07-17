@@ -33,7 +33,6 @@ class Quiz:
         for list in files.mutated_files.values():
             for i, file in enumerate(list):
                 self.sets.append(ProblemSet(file, i, prompts, distractors))
-                # print(file.content)
 
 
 # creates 4 different distractors of random types
@@ -50,6 +49,7 @@ def get_distractors(files: MutatedFiles, mc_opts: int) -> List[Mutation]:
         else:
             mutation_distractors.append(new_mut)
 
+    print("len: ", len(mutation_distractors))
     return mutation_distractors
 
 
