@@ -1,10 +1,11 @@
-import os
+import copy
 import random
 from pathlib import Path
 from typing import Dict, List
 
 from mutation_generator import MutatedFile, MutatedFiles
-from replacement import Mutation, Replacement, reverse
+from replacement import Replacement, reverse
+from mutation import Mutation, random_mutator
 
 
 class Quiz:
@@ -40,16 +41,16 @@ class Quiz:
 # if correct answer not in distractors, then 1 must get popped later
 def get_distractors(files: MutatedFiles, mc_opts: int) -> List[Mutation]:
     mutation_distractors: List[Mutation] = []
+    unused_lines = copy.deepcopy(files.file.content)
 
-    for _ in range(mc_opts):
-        new_mut = random.choice(files.all_mutations)
-        for mut in mutation_distractors:
-            if new_mut.id == mut.id:
-                break
+    for mut in sorted(files.mutations,key=lambda _: random.random()):
+        if len(mutation_distractors) == mc_opts:
+            break
         else:
-            mutation_distractors.append(new_mut)
+            mutation_distractors.append(mut)
 
-    print("len: ", len(mutation_distractors))
+    while len(mutation_distractors) < mc_opts:
+        mutation_distractors.append(random_mutator(unused_lines, mutation_distractors))
     return mutation_distractors
 
 
@@ -103,12 +104,12 @@ class FindMutation:
         )
         self.problem_type = "find mutation"
         self.prompt = prompt
-        self.answer = file.content[file.mutation.line]
+        self.answer = file.content[file.mutation.num]
 
         self.distractors: List[str] = []
         for distractor in distractors:
             if distractor.line != file.mutation.line:
-                self.distractors.append(file.content[distractor.line])
+                self.distractors.append(file.content[distractor.num])
 
         if len(self.distractors) == len(distractors):
             self.distractors.pop()
