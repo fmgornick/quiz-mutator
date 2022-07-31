@@ -3,15 +3,15 @@ import random
 from pathlib import Path
 from typing import Dict, List
 
-from mutation_generator import MutatedFile, MutatedFiles
-from replacement import Replacement, reverse
+from file import File, MutatedFile
 from mutation import Mutation, random_mutator
+from replacement import Replacement, reverse
 
 
 class Quiz:
     def __init__(
         self,
-        files: MutatedFiles,
+        file: File,
         reorder_prompt: str = "correct the order of these lines.  one line contains an incorrect mutation, ignore it for now.",
         find_mutation_prompt: str = "which line contains the mutation?",
         classify_mutation_prompt: str = "what change needs to be made for the function to work properly?",
@@ -28,22 +28,21 @@ class Quiz:
 
         # random other possible mutations to serve that serve to distract quizee
         # assuming 4 mc questions, we should have 3 distractors + the correct answer
-        distractors: List[Mutation] = get_distractors(files, mc_opts)
+        distractors: List[Mutation] = get_distractors(file, mc_opts)
 
         self.sets: List[ProblemSet] = []
-        for list in files.mutated_files.values():
-            for i, file in enumerate(list):
-                self.sets.append(ProblemSet(file, i, prompts, distractors))
+        for i, mutated_file in enumerate(file.mutated_files):
+            self.sets.append(ProblemSet(mutated_file, i, prompts, distractors))
 
 
 # creates 4 different distractors of random types
 # one extra ditractor just in case one manages to be the correct answer
 # if correct answer not in distractors, then 1 must get popped later
-def get_distractors(files: MutatedFiles, mc_opts: int) -> List[Mutation]:
+def get_distractors(file: File, mc_opts: int) -> List[Mutation]:
     mutation_distractors: List[Mutation] = []
-    unused_lines = copy.deepcopy(files.file.content)
+    unused_lines = copy.deepcopy(file.content)
 
-    for mut in sorted(files.mutations,key=lambda _: random.random()):
+    for mut in sorted(file.mutations, key=lambda _: random.random()):
         if len(mutation_distractors) == mc_opts:
             break
         else:
@@ -51,6 +50,7 @@ def get_distractors(files: MutatedFiles, mc_opts: int) -> List[Mutation]:
 
     while len(mutation_distractors) < mc_opts:
         mutation_distractors.append(random_mutator(unused_lines, mutation_distractors))
+
     return mutation_distractors
 
 

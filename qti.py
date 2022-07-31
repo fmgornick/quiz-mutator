@@ -241,7 +241,6 @@ def find_mutation(set: ProblemSet):
 
 
 def fix_mutation(set: ProblemSet):
-
     newfile = (
         "package/items/" + set.mutation.id + "/" + set.id + "/" + "FixMutation.xml"
     )

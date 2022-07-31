@@ -1,24 +1,32 @@
 import random
 from typing import List
 
-from replacement import Replacement
 from mutator import Mutator, get_mutators
+from replacement import Replacement
+
 
 class Mutation:
     def __init__(
         self,
         mutator_id: str,
-        mutator_description: str,
-        line_number: int,
+        description: str,
+        line_num: int,
         line: str,
         replacement: Replacement,
     ):
         self.id = mutator_id  # name of mutation ran on line
-        self.description = mutator_description  # describes mutation
-        self.num = line_number  # line number of mutated line
+        self.description = description  # describes mutation
+        self.num = line_num  # line number of mutated line
         self.line = line  # line content
         self.replacement = replacement  # info on old and new values
 
+    def __repr__(self) -> str:
+        return 'mutator id: {id}\ndescription: {des}\nline: {line}\nreplacement: {rep}\n'.format(
+            id=self.id,
+            des=self.description,
+            line=self.line,
+            rep=self.replacement,
+        )
 
 def random_mutator(content: List[str], existing: List[Mutation]) -> Mutation:
     mutators = get_mutators()
@@ -41,36 +49,35 @@ def random_mutator(content: List[str], existing: List[Mutation]) -> Mutation:
         mutator.description,
         line_num,
         line,
-        random_replacement(mutator, len(line), line),
+        random_replacement(mutator, line),
     )
 
 
 
-def random_replacement(mut: Mutator, length: int, line: str) -> Replacement:
+def random_replacement(mut: Mutator, line: str) -> Replacement:
     match mut.mutator_id:
         case "lineDeletion":
-            return Replacement(0, length, line, "")
+            return Replacement(0, len(line), line, "")
 
         case "decimalNumberLiteral":
             num = random.random() * 100
-            num_len = len("{.2f}".format(num))
-            pos = random.randint(0, length-num_len)
-            new_line = "%s{.2f}%s".format(line[:pos], num, line[pos+num_len:])
+            num_len = len("%.2f".format(num))
+            pos = random.randrange(0, len(line)-num_len)
+            new_line = "%s%.2f%s".format(line[:pos], num, line[pos+num_len:])
             return random.choice(mut.find_mutations(new_line))
 
         case "hexNumberLiteral":
             num = random.randint(0, 100)
             num_len = len("0x%d".format(num))
-            pos = random.randint(0, length-num_len)
+            pos = random.randrange(0, len(line)-num_len)
             new_line = "%s0x%d%s".format(line[:pos], num, line[pos+num_len:])
             return random.choice(mut.find_mutations(new_line))
 
         case _:
-            start_col = random.randrange(0, length)
+            start_col = random.randrange(0, len(line))
             old_val, new_vals = random.choice(
                 list(mut.pattern.replacement_patterns.items())
             )
             new_val = random.choice(new_vals)
 
             return Replacement(start_col, start_col + len(old_val), old_val, new_val)
-
