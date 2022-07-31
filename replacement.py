@@ -26,6 +26,17 @@ class Replacement:
             new_val=self.new_val,
         )
 
+    def quiz_rep(self, line: str) -> str:
+        return (
+            '[({begin_col}:{end_col}) "{old_val}" -> "{new_val}"] in "{line}"'.format(
+                line=line,
+                begin_col=self.start_col,
+                end_col=self.end_col,
+                old_val=self.old_val,
+                new_val=self.new_val,
+            )
+        )
+
 
 def reverse(r: Replacement) -> Replacement:
     return Replacement(r.start_col, r.end_col, r.new_val, r.old_val)

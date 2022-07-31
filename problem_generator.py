@@ -78,7 +78,12 @@ class ProblemSet:
         )
 
 
-class Reorder:
+class Question:
+    problem_type = "generic"
+    prompt = "generic question prompt"
+
+
+class Reorder(Question):
     def __init__(
         self,
         file: MutatedFile,
@@ -91,7 +96,7 @@ class Reorder:
         self.answer = file.content
 
 
-class FindMutation:
+class FindMutation(Question):
     def __init__(
         self,
         file: MutatedFile,
@@ -99,14 +104,14 @@ class FindMutation:
         prompt: str,
         distractors: List[Mutation],
     ):
-        self.problem_id = (
+        self.problem_id: str = (
             "findMutation" + file.mutation.id.capitalize() + str(mutation_num)
         )
-        self.problem_type = "find mutation"
-        self.prompt = prompt
-        self.answer = file.content[file.mutation.num]
-
+        self.problem_type: str = "find mutation"
+        self.prompt: str = prompt
+        self.answer: str = file.content[file.mutation.num]
         self.distractors: List[str] = []
+
         for distractor in distractors:
             if distractor.line != file.mutation.line:
                 self.distractors.append(file.content[distractor.num])
@@ -115,7 +120,7 @@ class FindMutation:
             self.distractors.pop()
 
 
-class ClassifyMutation:
+class ClassifyMutation(Question):
     def __init__(
         self,
         file: MutatedFile,
@@ -123,14 +128,14 @@ class ClassifyMutation:
         prompt: str,
         distractors: List[Mutation],
     ):
-        self.problem_id = (
+        self.problem_id: str = (
             "classifyMutation" + file.mutation.id.capitalize() + str(mutation_num)
         )
-        self.problem_type = "classify mutation"
-        self.prompt = prompt
-        self.answer = file.mutation.description
-
+        self.problem_type: str = "classify mutation"
+        self.prompt: str = prompt
+        self.answer: str = file.mutation.description
         self.distractors: List[str] = []
+
         for distractor in distractors:
             if distractor.description != file.mutation.description:
                 self.distractors.append(distractor.description)
@@ -139,7 +144,7 @@ class ClassifyMutation:
             self.distractors.pop()
 
 
-class FixMutation:
+class FixMutation(Question):
     def __init__(
         self,
         file: MutatedFile,
@@ -147,17 +152,21 @@ class FixMutation:
         prompt: str,
         distractors: List[Mutation],
     ):
-        self.problem_id = (
+        self.problem_id: str = (
             "fixMutation" + file.mutation.id.capitalize() + str(mutation_num)
         )
-        self.problem_type = "fix mutation"
-        self.prompt = prompt
-        self.answer = reverse(file.mutation.replacement)
+        self.problem_type: str = "fix mutation"
+        self.prompt: str = prompt
+        self.answer: str = reverse(file.mutation.replacement).quiz_rep(
+            file.mutation.line
+        )
 
-        self.distractors: List[Replacement] = []
+        self.distractors: List[str] = []
         for distractor in distractors:
             if distractor.replacement != file.mutation.replacement:
-                self.distractors.append(reverse(distractor.replacement))
+                self.distractors.append(
+                    reverse(distractor.replacement).quiz_rep(distractor.line)
+                )
 
         if len(self.distractors) == len(distractors):
             self.distractors.pop()

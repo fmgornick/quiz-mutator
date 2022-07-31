@@ -1,15 +1,15 @@
 import os
 import shutil
 import xml.dom.minidom as md
+from typing import Dict
 
-from mutator import get_mutators
-from problem_generator import ProblemSet, Quiz
+import problem_generator as pg
 
 
 class QTI:
     def __init__(
         self,
-        quiz: Quiz,
+        quiz: pg.Quiz,
         bank_title: str = "question bank",
         zip: str = "qti",
     ):
@@ -50,7 +50,7 @@ class QTI:
         shutil.rmtree("package")
 
 
-def new_section(set: ProblemSet):
+def new_section(set: pg.ProblemSet):
     if not os.path.isdir("package/items/" + set.mutation.id):
         os.mkdir("package/items/" + set.mutation.id)
 
@@ -58,8 +58,9 @@ def new_section(set: ProblemSet):
 
     add_dependencies(set)
     order(set)
-    find_mutation(set)
-    fix_mutation(set)
+    multiple_choice(set, "findMutation")
+    multiple_choice(set, "classifyMutation")
+    multiple_choice(set, "fixMutation")
 
 
 def make_pretty(directory: str):
@@ -73,9 +74,9 @@ def make_pretty(directory: str):
             f.close()
 
 
-def add_dependencies(set: ProblemSet):
+def add_dependencies(set: pg.ProblemSet):
     manifest = md.parse("package/imsmanifest.xml")
-    ids = ["Order", "FindMutation", "FixMutation"]
+    ids = ["Order", "FindMutation", "ClassifyMutation", "FixMutation"]
 
     for id in ids:
         resource = manifest.createElement("resource")
@@ -116,34 +117,16 @@ def add_dependencies(set: ProblemSet):
         item.setAttribute(
             "href", "items/" + set.mutation.id + "/" + set.id + "/" + id + ".xml"
         )
-
-        weight = assessment.createElement("weight")
-        weight.setAttribute("identifier", set.mutation.id + set.id + id + "Weight")
-
-        if id == "Order":
-            weight.setAttribute("value", str(len(set.content)))
-        else:
-            weight.setAttribute("value", "2")
-
-        item.appendChild(weight)
         section.appendChild(item)
 
     testPart.appendChild(section)
-
-    total_lines = int(
-        assessment.getElementsByTagName("baseValue")[0].firstChild.nodeValue
-    )
-    total_lines += len(set.content)
-    assessment.getElementsByTagName("baseValue")[0].firstChild.nodeValue = str(
-        total_lines
-    )
 
     f = open("package/assessment.xml", "w")
     f.write(assessment.toxml())
     f.close()
 
 
-def order(set: ProblemSet):
+def order(set: pg.ProblemSet):
     newfile = "package/items/" + set.mutation.id + "/" + set.id + "/" + "Order.xml"
     fr = open("qti_templates/order_template.xml", "r")
     fw = open(newfile, "w")
@@ -196,11 +179,26 @@ def order(set: ProblemSet):
     f.close()
 
 
-def find_mutation(set: ProblemSet):
-    newfile = (
-        "package/items/" + set.mutation.id + "/" + set.id + "/" + "FindMutation.xml"
-    )
-    fr = open("qti_templates/find_mutation_template.xml", "r")
+def multiple_choice(set: pg.ProblemSet, mc_field: str) -> None:
+    match mc_field:
+        case "findMutation":
+            field: pg.Question = set.findMutation
+            title: str = " Find Mutation Problem"
+            filename: str = "FindMutation.xml"
+        case "classifyMutation":
+            field: pg.Question = set.classifyMutation
+            title: str = " Classify Mutation Problem"
+            filename: str = "ClassifyMutation.xml"
+        case "fixMutation":
+            field: pg.Question = set.fixMutation
+            title: str = " Fix Mutation Problem"
+            filename: str = "FixMutation.xml"
+        case _:
+            print("unreachable")
+            return
+
+    newfile = "package/items/" + set.mutation.id + "/" + set.id + "/" + filename
+    fr = open("qti_templates/multiple_choice_template.xml", "r")
     fw = open(newfile, "w")
     for line in fr:
         fw.write(line)
@@ -210,62 +208,30 @@ def find_mutation(set: ProblemSet):
     file = md.parse(newfile)
 
     file.getElementsByTagName("assessmentItem")[0].setAttribute(
-        "title", set.id + " Find Mutation Problem"
+        "title", set.id + title
     )
     file.getElementsByTagName("assessmentItem")[0].setAttribute(
         "identifier", set.mutation.id + set.id
     )
+    prompt = file.getElementsByTagName("prompt")[0]
+    prompt.appendChild(file.createTextNode(field.prompt))
 
     choices = file.getElementsByTagName("choiceInteraction")[0]
 
-    mutators = get_mutators()
-    for i, line in enumerate(set.content):
-        for _, mutator in mutators.items():
-            if len(mutator.find_mutations(line)) > 0:
-                choice = file.createElement("simpleChoice")
-                if line != set.findMutation.answer[i]:
-                    choice.setAttribute("identifier", "correct")
-                else:
-                    choice.setAttribute("identifier", "wrong" + str(i))
+    # set distractor choices
+    for distractor in field.distractors:
+        wrong = file.createElement("simpleChoice")
+        wrong.setAttribute("fixed", "false")
+        wrong.setAttribute("identifier", "wrong")
+        wrong.appendChild(file.createTextNode(distractor))
+        choices.appendChild(wrong)
 
-                choice.setAttribute("fixed", "false")
-                choice.appendChild(file.createTextNode(line))
-
-                choices.appendChild(choice)
-
-                break
-
-    f = open(newfile, "w")
-    f.write(file.toxml())
-    f.close()
-
-
-def fix_mutation(set: ProblemSet):
-    newfile = (
-        "package/items/" + set.mutation.id + "/" + set.id + "/" + "FixMutation.xml"
-    )
-    fr = open("qti_templates/fix_mutation_template.xml", "r")
-    fw = open(newfile, "w")
-    for line in fr:
-        fw.write(line)
-    fr.close()
-    fw.close()
-
-    file = md.parse(newfile)
-
-    file.getElementsByTagName("assessmentItem")[0].setAttribute(
-        "title", set.id + " Fix Mutation Problem"
-    )
-    file.getElementsByTagName("assessmentItem")[0].setAttribute(
-        "identifier", set.mutation.id + set.id
-    )
-
-    file.getElementsByTagName("gapText")[0].appendChild(
-        file.createTextNode(set.fixMutation.answer.old_val)
-    )
-    file.getElementsByTagName("gapText")[1].appendChild(
-        file.createTextNode(set.fixMutation.answer.old_val)
-    )
+    # set correct answer
+    correct = file.createElement("simpleChoice")
+    correct.setAttribute("fixed", "false")
+    correct.setAttribute("identifier", "correct")
+    correct.appendChild(file.createTextNode(field.answer))
+    choices.appendChild(correct)
 
     f = open(newfile, "w")
     f.write(file.toxml())
