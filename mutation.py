@@ -17,14 +17,15 @@ class Mutation:
         self.id: str = mutator_id  # name of mutation ran on line
         self.description: str = description  # describes mutation
         self.num: int = line_num  # line number of mutated line
-        self.line: str = line  # line content
+        self.before: str = line  # line content before mutation
+        self.after: str = replacement.apply(self.before)
         self.replacement: Replacement = replacement  # info on old and new values
 
     def __repr__(self) -> str:
         return 'mutator id: {id}\ndescription: {des}\nline: {line}\nreplacement: {rep}\n'.format(
             id=self.id,
             des=self.description,
-            line=self.line,
+            line=self.before,
             rep=self.replacement,
         )
 

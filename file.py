@@ -106,5 +106,5 @@ class MutatedFile:
     def __init__(self, filename: str, content: List[str], mut: Mutation):
         self.filename = filename
         self.content = copy.deepcopy(content)
-        self.content[mut.num] = mut.replacement.apply(self.content[mut.num])
+        self.content[mut.num] = mut.after
         self.mutation = mut

@@ -5,7 +5,7 @@ from typing import Dict, List
 
 from file import File, MutatedFile
 from mutation import Mutation, random_mutator
-from replacement import Replacement, reverse
+from replacement import reverse
 
 
 class Quiz:
@@ -113,7 +113,7 @@ class FindMutation(Question):
         self.distractors: List[str] = []
 
         for distractor in distractors:
-            if distractor.line != file.mutation.line:
+            if distractor.before != file.mutation.before:
                 self.distractors.append(file.content[distractor.num])
 
         if len(self.distractors) == len(distractors):
@@ -158,14 +158,14 @@ class FixMutation(Question):
         self.problem_type: str = "fix mutation"
         self.prompt: str = prompt
         self.answer: str = reverse(file.mutation.replacement).quiz_rep(
-            file.mutation.line
+            file.mutation.after
         )
 
         self.distractors: List[str] = []
         for distractor in distractors:
             if distractor.replacement != file.mutation.replacement:
                 self.distractors.append(
-                    reverse(distractor.replacement).quiz_rep(distractor.line)
+                    distractor.replacement.quiz_rep(distractor.before)
                 )
 
         if len(self.distractors) == len(distractors):
