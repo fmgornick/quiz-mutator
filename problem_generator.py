@@ -66,7 +66,7 @@ class ProblemSet:
         self.content = file.content
         self.mutation = file.mutation
 
-        self.reorder = Reorder(file, mutation_num, prompts["reorder"])
+        self.order = Reorder(file, mutation_num, prompts["reorder"])
         self.findMutation = FindMutation(
             file, mutation_num, prompts["find mutation"], distractors
         )

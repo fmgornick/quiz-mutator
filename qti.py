@@ -1,7 +1,6 @@
 import os
 import shutil
 import xml.dom.minidom as md
-from typing import Dict
 
 import problem_generator as pg
 
@@ -144,7 +143,7 @@ def order(set: pg.ProblemSet):
         "identifier", set.mutation.id + set.id
     )
     file.getElementsByTagName("prompt")[0].appendChild(
-        file.createTextNode(set.reorder.prompt)
+        file.createTextNode(set.order.prompt)
     )
 
     matchIDs = file.getElementsByTagName("correctResponse")[0]
@@ -218,6 +217,13 @@ def multiple_choice(set: pg.ProblemSet, mc_field: str) -> None:
 
     choices = file.getElementsByTagName("choiceInteraction")[0]
 
+    # set correct answer
+    correct = file.createElement("simpleChoice")
+    correct.setAttribute("fixed", "false")
+    correct.setAttribute("identifier", "correct")
+    correct.appendChild(file.createTextNode(field.answer))
+    choices.appendChild(correct)
+
     # set distractor choices
     for distractor in field.distractors:
         wrong = file.createElement("simpleChoice")
@@ -225,13 +231,6 @@ def multiple_choice(set: pg.ProblemSet, mc_field: str) -> None:
         wrong.setAttribute("identifier", "wrong")
         wrong.appendChild(file.createTextNode(distractor))
         choices.appendChild(wrong)
-
-    # set correct answer
-    correct = file.createElement("simpleChoice")
-    correct.setAttribute("fixed", "false")
-    correct.setAttribute("identifier", "correct")
-    correct.appendChild(file.createTextNode(field.answer))
-    choices.appendChild(correct)
 
     f = open(newfile, "w")
     f.write(file.toxml())
