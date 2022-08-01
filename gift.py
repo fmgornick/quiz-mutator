@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 from pathlib import Path
 
@@ -30,11 +31,11 @@ def new_section(set: pg.ProblemSet):
 
 def order(set: pg.ProblemSet, filename: str):
     f = open(filename, "a")
-    f.write("::" + set.id + " Ordering Problem\n")
-    f.write("::" + set.order.prompt + " {\n")
+    f.write("::" + escape(set.id) + " Ordering Problem\n")
+    f.write("::" + escape(set.order.prompt) + " {\n")
 
     for i, line in enumerate(set.order.answer):
-        f.write("\t={num} -> {line}\n".format(num=i, line=line))
+        f.write("\t={num} -> {line}\n".format(num=i, line=escape(line)))
     f.write("}\n\n")
     f.close()
 
@@ -54,10 +55,17 @@ def multiple_choice(set: pg.ProblemSet, filename: str, mc_field: str):
             return
 
     f = open(filename, "a")
-    f.write("::" + set.id + title + "\n")
-    f.write("::" + field.prompt + " {\n")
-    f.write("\t=" + field.answer + "\n")
+    f.write("::" + escape(set.id) + escape(title) + "\n")
+    f.write("::" + escape(field.prompt) + " {\n")
+    f.write("\t=" + escape(field.answer) + "\n")
     for distractor in field.distractors:
-        f.write("\t~" + distractor + "\n")
+        f.write("\t~" + escape(distractor) + "\n")
     f.write("}\n\n")
     f.close()
+
+def escape(line: str) -> str:
+    return re.sub(
+        r'(\~|\=|\#|\{|\}|\:)',
+        lambda m:{'~':'\~','=':'\=','#':'\#','{':'\{','}':'\}',':':'\:'}[m.group()],
+        line
+    )
