@@ -11,7 +11,7 @@ class QuizMeta:
     def __init__(
         self,
         quiz_title: str = "problem bank", 
-        zip_filename: str = "qti", 
+        zip_filename: str = "problem_bank", 
         reorder_prompt: str = "correct the order of these lines.  one line contains an incorrect mutation, ignore it for now.",
         find_mutation_prompt: str = "which line contains the mutation?",
         classify_mutation_prompt: str = "what change needs to be made for the function to work properly?",
@@ -29,13 +29,13 @@ class QuizMeta:
         self.mc_distractors = mc_distractors
 
 def customize_quiz() -> QuizMeta:
-    print("\nfor any of the following prompts, just hit enter for default")
-    quiz_title = input("quiz title (default = \"problem bank\"): " or "problem bank")
-    zip_filename = input("zip filename (default = \"qti\"): " or "qti")
-    reorder_prompt = input("reorder prompt: " or  "correct the order of these lines.  one line contains an incorrect mutation, ignore it for now.")
-    find_mutation_prompt = input("find mutation prompt: " or  "which line contains the mutation?")
-    classify_mutation_prompt = input("classify mutation prompt: " or  "what change needs to be made for the function to work properly?")
-    fix_mutation_prompt = input("fix mutation prompt: " or  "what change needs to be made for the function to work properly?")
+    print("\nfor any of the following prompts, just hit enter for default...")
+    quiz_title = input("quiz title (default = \"problem bank\"): ") or "problem bank"
+    zip_filename = input("zip filename (default = \"problem_bank\"): ").replace(' ', '_') or "problem_bank"
+    reorder_prompt = input("reorder prompt: ") or  "correct the order of these lines.  one line contains an incorrect mutation, ignore it for now."
+    find_mutation_prompt = input("find mutation prompt: ") or  "which line contains the mutation?"
+    classify_mutation_prompt = input("classify mutation prompt: ") or  "what change needs to be made for the function to work properly?"
+    fix_mutation_prompt = input("fix mutation prompt: ") or  "what change needs to be made for the function to work properly?"
     max_mutations = int(input("max mutations (default = 10, 0 means NO MAX): ") or "10")
     mc_distractors = int(input("number of disractors for mc questions (default = 3): ") or "3")
 
@@ -50,8 +50,8 @@ def customize_quiz() -> QuizMeta:
         mc_distractors = mc_distractors,
     )
 
-def format_quiz(quiz: Quiz, format: str, bank_title: str, zip_filename: str) -> None:
-    match format.lower():
+def format_quiz(quiz: Quiz, quiz_format: str, bank_title: str, zip_filename: str) -> None:
+    match quiz_format.lower():
         case "qti":
             qti = QTI(
                 quiz=quiz,
@@ -68,16 +68,36 @@ def format_quiz(quiz: Quiz, format: str, bank_title: str, zip_filename: str) -> 
             gift.make_quiz()
 
         case _:
+            print(quiz_format.lower())
             print("invalid format name")
 
 if __name__ == "__main__":
     match len(sys.argv):
         case 1:
-            print("error: must provide filename argument")
+            filename = input("file path: ")
+            if os.path.exists(filename):
+                quiz_format = input("do you want QTI or GIFT format? (default = \"QTI\"): ") or "QTI"
+                yn = input("do you want to customize QTI zip? (y/n): ")
+                if (yn == 'y'):
+                    meta = customize_quiz()
+                else:
+                    meta = QuizMeta()
+                file = File(filename, meta.max_mutations)
+                quiz = Quiz(
+                    file=file,
+                    reorder_prompt=meta.reorder_prompt,
+                    find_mutation_prompt=meta.find_mutation_prompt,
+                    classify_mutation_prompt=meta.classify_mutation_prompt,
+                    fix_mutation_prompt=meta.fix_mutation_prompt,
+                    mc_opts=meta.mc_distractors,
+                )
+                format_quiz(quiz, quiz_format, meta.quiz_title, meta.zip_filename)
+            else:
+                print("error: invalid filename")
 
         case 2:
             if os.path.exists(sys.argv[1]):
-                format = input("do you want QTI or GIFT format? (default = \"QTI\"): " or "QTI\n")
+                quiz_format = input("do you want QTI or GIFT format? (default = \"QTI\"): ") or "QTI"
                 yn = input("do you want to customize QTI zip? (y/n): ")
                 if (yn == 'y'):
                     meta = customize_quiz()
@@ -92,13 +112,13 @@ if __name__ == "__main__":
                     fix_mutation_prompt=meta.fix_mutation_prompt,
                     mc_opts=meta.mc_distractors,
                 )
-                format_quiz(quiz, format, meta.quiz_title, meta.zip_filename)
+                format_quiz(quiz, quiz_format, meta.quiz_title, meta.zip_filename)
             else:
                 print("error: invalid filename")
 
         case 3:
             if os.path.exists(sys.argv[1]):
-                format = sys.argv[2]
+                quiz_format = sys.argv[2]
                 yn = input("do you want to customize QTI zip? (y/n): ")
                 if (yn == 'y'):
                     meta = customize_quiz()
@@ -113,7 +133,7 @@ if __name__ == "__main__":
                     fix_mutation_prompt=meta.fix_mutation_prompt,
                     mc_opts=meta.mc_distractors,
                 )
-                format_quiz(quiz, format, meta.quiz_title, meta.zip_filename)
+                format_quiz(quiz, quiz_format, meta.quiz_title, meta.zip_filename)
             else:
                 print("error: invalid filename")
 
