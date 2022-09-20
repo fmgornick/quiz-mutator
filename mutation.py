@@ -5,6 +5,8 @@ from mutator import Mutator, get_mutators
 from replacement import Replacement
 
 
+# mutation object: contains information about a mutation ran on a specific file
+# object contains id, description, line number, replacement made, and a before->after
 class Mutation:
     def __init__(
         self,
@@ -14,13 +16,14 @@ class Mutation:
         line: str,
         replacement: Replacement,
     ):
-        self.id: str = mutator_id  # name of mutation ran on line
-        self.description: str = description  # describes mutation
-        self.num: int = line_num  # line number of mutated line
-        self.before: str = line  # line content before mutation
-        self.after: str = replacement.apply(self.before)
-        self.replacement: Replacement = replacement  # info on old and new values
+        self.id: str = mutator_id                         # name of mutation ran on line
+        self.description: str = description               # describes mutation
+        self.num: int = line_num                          # line number of mutated line
+        self.before: str = line                           # line content before mutation
+        self.after: str = replacement.apply(self.before)  # line content after mutation
+        self.replacement: Replacement = replacement       # info on old and new values
 
+    # for printing mutation (mainly used for debugging)
     def __repr__(self) -> str:
         return 'mutator id: {id}\ndescription: {des}\nline: {line}\nreplacement: {rep}\n'.format(
             id=self.id,
@@ -29,7 +32,10 @@ class Mutation:
             rep=self.replacement,
         )
 
-def random_mutator(content: List[str], existing: List[Mutation]) -> Mutation:
+# function used to create a random mutation on a file, used as a distractor
+# for a multiple choice question
+# TODO: change up logic of mutation generator function
+def random_mutation(content: List[str], existing: List[Mutation]) -> Mutation:
     mutators = get_mutators()
     unused_mutators = get_mutators()
     for mut in existing:
@@ -55,6 +61,7 @@ def random_mutator(content: List[str], existing: List[Mutation]) -> Mutation:
 
 
 
+# apply random replacement on a given line with specified mutator
 def random_replacement(mut: Mutator, line: str) -> Replacement:
     match mut.mutator_id:
         case "lineDeletion":
