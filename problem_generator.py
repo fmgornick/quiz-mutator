@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from file import File, MutatedFile
-from mutation import Mutation, random_mutator
+from mutation import Mutation, random_mutation
 from replacement import reverse
 
 
@@ -48,8 +48,13 @@ def get_distractors(file: File, mc_opts: int) -> List[Mutation]:
         else:
             mutation_distractors.append(mut)
 
+    # add multiple choice distractors to our problem
+    # make sure no two distractors are the same
     while len(mutation_distractors) < mc_opts:
-        mutation_distractors.append(random_mutator(unused_lines, mutation_distractors))
+        d = random_mutation(unused_lines, mutation_distractors)
+        for mut in mutation_distractors:
+            if d.after != mut.after:
+                mutation_distractors.append(d)
 
     return mutation_distractors
 
