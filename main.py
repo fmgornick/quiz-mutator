@@ -98,7 +98,7 @@ if __name__ == "__main__":
         case 2:
             if os.path.exists(sys.argv[1]):
                 quiz_format = input("do you want QTI or GIFT format? (default = \"QTI\"): ") or "QTI"
-                yn = input("do you want to customize QTI zip? (y/n): ")
+                yn = input("do you want to customize your zip file? (y/n): ")
                 if (yn == 'y'):
                     meta = customize_quiz()
                 else:
@@ -119,7 +119,7 @@ if __name__ == "__main__":
         case 3:
             if os.path.exists(sys.argv[1]):
                 quiz_format = sys.argv[2]
-                yn = input("do you want to customize QTI zip? (y/n): ")
+                yn = input("do you want to customize your zip file? (y/n): ")
                 if (yn == 'y'):
                     meta = customize_quiz()
                 else:
