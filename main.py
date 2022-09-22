@@ -89,7 +89,7 @@ if __name__ == "__main__":
                     find_mutation_prompt=meta.find_mutation_prompt,
                     classify_mutation_prompt=meta.classify_mutation_prompt,
                     fix_mutation_prompt=meta.fix_mutation_prompt,
-                    mc_opts=meta.mc_distractors,
+                    mc_opts=meta.mc_distractors + 1,
                 )
                 format_quiz(quiz, quiz_format, meta.quiz_title, meta.zip_filename)
             else:
