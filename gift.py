@@ -21,7 +21,7 @@ class GIFT:
 
 
 def new_section(set: pg.ProblemSet):
-    filename = "package/" + set.id + ".txt"
+    filename = "package/" + set.id + ".md"
     Path(filename).touch()
     order(set, filename)
     multiple_choice(set, filename, "findMutation")
