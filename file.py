@@ -53,7 +53,7 @@ class File:
         for mut in self.mutations:
             self.mutated_files.append(MutatedFile(self.filename, self.content, mut))
 
-    # only retrieve lines contatining importent stuff
+    # only retrieve lines contatining important stuff
     def __get_lines(self) -> Generator[str, None, None]:
         in_comment = False
 
