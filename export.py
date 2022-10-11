@@ -3,21 +3,14 @@ from problem_generator import Quiz
 from qti import QTI
 
 
-def export_file(quiz: Quiz, quiz_format: str, bank_title: str, zip_filename: str) -> None:
+def export_file(quiz: Quiz, quiz_format: str, bank_title: str, output_file: str) -> None:
     match quiz_format.lower():
         case "qti":
-            qti = QTI(
-                quiz=quiz,
-                bank_title=bank_title,
-                zip=zip_filename,
-            )
+            qti = QTI(quiz, bank_title, output_file)
             qti.make_quiz()
 
         case "gift":
-            gift = GIFT(
-                quiz=quiz,
-                zip=zip_filename,
-            )
+            gift = GIFT(quiz, output_file)
             gift.make_quiz()
 
         case _:
