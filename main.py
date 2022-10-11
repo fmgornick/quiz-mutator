@@ -37,8 +37,8 @@ if __name__ == "__main__":
                 fix_mutation_prompt=meta.fix_mutation_prompt,
                 mc_opts=meta.mc_distractors + 1,
             )
-            export_file(quiz, quiz_format, meta.quiz_title, meta.zip_filename)
-            print("\nfile saved as {}.zip".format(meta.zip_filename))
+            export_file(quiz, quiz_format, meta.quiz_title, meta.output_file)
+            print("\nfile saved as {}.zip".format(meta.output_file))
         else:
             print("error: invalid filename")
     except KeyboardInterrupt:
