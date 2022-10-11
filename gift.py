@@ -1,4 +1,3 @@
-import os
 import re
 import shutil
 from pathlib import Path
@@ -7,17 +6,27 @@ import problem_generator as pg
 
 
 class GIFT:
-    def __init__(self, quiz: pg.Quiz, zip: str = "gift"):
+    def __init__(self, quiz: pg.Quiz, output: str = "gift"):
         self.quiz = quiz
-        self.zip = zip
-
-        os.mkdir("package")
+        self.output = output
 
     def make_quiz(self):
-        for set in self.quiz.sets:
-            new_section(set)
-        shutil.make_archive(self.zip, "zip", "package")
-        shutil.rmtree("package")
+        f = open(self.output + ".txt", "a")
+        match self.quiz.type:
+            case "parsons":
+                q = self.quiz.question
+                f.write("::" + escape(q.id) + " Ordering Problem\n")
+                f.write("::" + escape(q.prompt) + " {\n")
+
+                for i, line in enumerate(q.answer):
+                    f.write("\t={num} -> {line}\n".format(num=i, line=escape(line)))
+                f.write("}\n\n")
+
+            case "mutation":
+                for set in self.quiz.sets:
+                    new_section(set)
+                shutil.make_archive(self.output, "zip", "package")
+                shutil.rmtree("package")
 
 
 def new_section(set: pg.ProblemSet):
