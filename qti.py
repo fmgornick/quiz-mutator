@@ -10,11 +10,11 @@ class QTI:
         self,
         quiz: pg.Quiz,
         bank_title: str = "question bank",
-        zip: str = "qti",
+        output: str = "qti",
     ):
         self.quiz = quiz
         self.bank_title = bank_title
-        self.zip = zip
+        self.zip = output
 
         os.mkdir("package")
         fr = open("qti_templates/manifest_template.xml", "r")
@@ -39,11 +39,16 @@ class QTI:
         f.write(file.toxml())
         f.close()
 
-        os.mkdir("package/items")
+        if quiz.type == "mutation":
+            os.mkdir("package/items")
 
     def make_quiz(self):
-        for set in self.quiz.sets:
-            new_section(set)
+        match self.quiz.type:
+            case "parsons":
+                make_parsons(self.quiz.question)
+            case "mutation":
+                for set in self.quiz.sets:
+                    new_section(set)
         make_pretty("package")
         shutil.make_archive(self.zip, "zip", "package")
         shutil.rmtree("package")
@@ -123,6 +128,97 @@ def add_dependencies(set: pg.ProblemSet):
     f = open("package/assessment.xml", "w")
     f.write(assessment.toxml())
     f.close()
+
+def make_parsons(question: pg.Parson):
+    manifest = md.parse("package/imsmanifest.xml")
+
+    resource = manifest.createElement("resource")
+    mhref = manifest.createElement("file")
+
+    resource.setAttribute("identifier", question.id)
+    resource.setAttribute("type", "imsqti_item_xmlv2p2")
+    resource.setAttribute("href", "Parsons.xml")
+    mhref.setAttribute("href", "Parsons.xml")
+
+    resource.appendChild(mhref)
+    manifest.getElementsByTagName("resources")[0].appendChild(resource)
+
+    dependency = manifest.createElement("dependency")
+    dependency.setAttribute("identifierref", question.id)
+    manifest.getElementsByTagName("resource")[0].appendChild(dependency)
+
+    f = open("package/imsmanifest.xml", "w")
+    f.write(manifest.toxml())
+    f.close()
+
+    assessment = md.parse("package/assessment.xml")
+    testPart = assessment.getElementsByTagName("testPart")[0]
+
+    section = assessment.createElement("assessmentSection")
+    section.setAttribute("identifier", question.id)
+    section.setAttribute("title", question.id + " Parsons Problem")
+    section.setAttribute("visible", "false")
+
+    item = assessment.createElement("assessmentItemRef")
+    item.setAttribute("identifier", question.id)
+    item.setAttribute("href", "Parsons.xml")
+    section.appendChild(item)
+
+    testPart.appendChild(section)
+
+    f = open("package/assessment.xml", "w")
+    f.write(assessment.toxml())
+    f.close()
+
+    newfile = "package/Parsons.xml"
+    fr = open("qti_templates/order_template.xml", "r")
+    fw = open(newfile, "w")
+    for line in fr:
+        fw.write(line)
+    fr.close()
+    fw.close()
+
+    file = md.parse(newfile)
+
+    file.getElementsByTagName("assessmentItem")[0].setAttribute(
+        "title", question.id + " Parsons Problem"
+    )
+    file.getElementsByTagName("assessmentItem")[0].setAttribute("identifier", question.id)
+    file.getElementsByTagName("prompt")[0].appendChild(
+        file.createTextNode(question.prompt)
+    )
+
+    matchIDs = file.getElementsByTagName("correctResponse")[0]
+    mapping = file.getElementsByTagName("mapping")[0]
+    qLines = file.getElementsByTagName("simpleMatchSet")[0]
+    aLines = file.getElementsByTagName("simpleMatchSet")[1]
+    for i, line in enumerate(question.answer):
+        matchID = file.createElement("value")
+        matchID.appendChild(file.createTextNode("q" + str(i + 1) + " a" + str(i + 1)))
+
+        map = file.createElement("mapEntry")
+        map.setAttribute("mapKey", "q" + str(i + 1) + " a" + str(i + 1))
+        map.setAttribute("mappedValue", "1")
+        mapping.appendChild(map)
+
+        qLine = file.createElement("simpleAssociableChoice")
+        qLine.setAttribute("identifier", "q" + str(i + 1))
+        qLine.setAttribute("matchMax", "1")
+        qLine.appendChild(file.createTextNode(str(i + 1)))
+
+        aLine = file.createElement("simpleAssociableChoice")
+        aLine.setAttribute("identifier", "a" + str(i + 1))
+        aLine.setAttribute("matchMax", "1")
+        aLine.appendChild(file.createTextNode(line))
+
+        matchIDs.appendChild(matchID)
+        qLines.appendChild(qLine)
+        aLines.appendChild(aLine)
+
+    f = open(newfile, "w")
+    f.write(file.toxml())
+    f.close()
+
 
 
 def order(set: pg.ProblemSet):
