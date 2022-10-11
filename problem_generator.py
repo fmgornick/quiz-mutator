@@ -5,34 +5,32 @@ from typing import Dict, List
 
 from file import File, MutatedFile
 from mutation import Mutation, random_mutation
+from quiz_meta import QuizMeta
 from replacement import reverse
 
 
 class Quiz:
-    def __init__(
-        self,
-        file: File,
-        reorder_prompt: str = "correct the order of these lines.  one line contains an incorrect mutation, ignore it for now.",
-        find_mutation_prompt: str = "which line contains the mutation?",
-        classify_mutation_prompt: str = "what change needs to be made for the function to work properly?",
-        fix_mutation_prompt: str = "what change needs to be made for the function to work properly?",
-        mc_opts: int = 4,
-    ):
+    def __init__(self, file: File, meta: QuizMeta):
+        self.type = meta.type
         # map of prompts used by ProblemSet init function
-        prompts: Dict[str, str] = {
-            "reorder": reorder_prompt,
-            "find mutation": find_mutation_prompt,
-            "classify mutation": classify_mutation_prompt,
-            "fix mutation": fix_mutation_prompt,
-        }
+        match self.type:
+            case "parsons":
+                self.question = Parson(file, meta.reorder_prompt)
+            case "mutation":
+                prompts: Dict[str, str] = {
+                    "reorder": meta.reorder_prompt,
+                    "find mutation": meta.find_mutation_prompt,
+                    "classify mutation": meta.classify_mutation_prompt,
+                    "fix mutation": meta.fix_mutation_prompt,
+                }
 
-        # random other possible mutations to serve that serve to distract quizee
-        # assuming 4 mc questions, we should have 3 distractors + the correct answer
-        distractors: List[Mutation] = get_distractors(file, mc_opts)
+                # random other possible mutations to serve that serve to distract quizee
+                # assuming 4 mc questions, we should have 3 distractors + the correct answer
+                distractors: List[Mutation] = get_distractors(file, meta.mc_distractors + 1)
 
-        self.sets: List[ProblemSet] = []
-        for i, mutated_file in enumerate(file.mutated_files):
-            self.sets.append(ProblemSet(mutated_file, i, prompts, distractors))
+                self.sets: List[ProblemSet] = []
+                for i, mutation in enumerate(file.mutations):
+                    self.sets.append(ProblemSet(file, mutation, i, prompts, distractors))
 
 
 # creates 4 different distractors of random types
@@ -62,25 +60,21 @@ def get_distractors(file: File, mc_opts: int) -> List[Mutation]:
 class ProblemSet:
     def __init__(
         self,
-        file: MutatedFile,
+        file: File,
+        mutation: Mutation,
         mutation_num: int,
         prompts: Dict[str, str],
         distractors: List[Mutation],
     ):
         self.id = Path(file.filename).stem.capitalize() + str(mutation_num)
+        self.mutation = mutation
         self.content = file.content
-        self.mutation = file.mutation
+        self.content[mutation.num] = mutation.after
 
-        self.order = Reorder(file, mutation_num, prompts["reorder"])
-        self.findMutation = FindMutation(
-            file, mutation_num, prompts["find mutation"], distractors
-        )
-        self.classifyMutation = ClassifyMutation(
-            file, mutation_num, prompts["classify mutation"], distractors
-        )
-        self.fixMutation = FixMutation(
-            file, mutation_num, prompts["fix mutation"], distractors
-        )
+        self.order = Reorder(self.content, mutation, mutation_num, prompts["reorder"])
+        self.findMutation = FindMutation(file, mutation, mutation_num, prompts["find mutation"], distractors)
+        self.classifyMutation = ClassifyMutation(mutation, mutation_num, prompts["classify mutation"], distractors)
+        self.fixMutation = FixMutation(mutation, mutation_num, prompts["fix mutation"], distractors)
 
 
 class Question:
@@ -88,37 +82,46 @@ class Question:
     prompt = "generic question prompt"
 
 
+class Parson(Question):
+    def __init__( self, file: File, prompt: str):
+        self.id = Path(file.filename).stem.capitalize()
+        self.problem_type = "parsons"
+        self.prompt = prompt
+        self.answer = file.content
+
 class Reorder(Question):
     def __init__(
         self,
-        file: MutatedFile,
+        content: List[str],
+        mutation: Mutation,
         mutation_num: int,
         prompt: str,
     ):
-        self.problem_id = "reorder" + file.mutation.id.capitalize() + str(mutation_num)
+        self.problem_id = "reorder" + mutation.id.capitalize() + str(mutation_num)
         self.problem_type = "reorder"
         self.prompt = prompt
-        self.answer = file.content
+        self.answer = content
 
 
 class FindMutation(Question):
     def __init__(
         self,
-        file: MutatedFile,
+        file: File,
+        mutation: Mutation,
         mutation_num: int,
         prompt: str,
         distractors: List[Mutation],
     ):
         self.problem_id: str = (
-            "findMutation" + file.mutation.id.capitalize() + str(mutation_num)
+            "findMutation" + mutation.id.capitalize() + str(mutation_num)
         )
         self.problem_type: str = "find mutation"
         self.prompt: str = prompt
-        self.answer: str = file.content[file.mutation.num]
+        self.answer: str = file.content[mutation.num]
         self.distractors: List[str] = []
 
         for distractor in distractors:
-            if distractor.before != file.mutation.before:
+            if distractor.before != mutation.before:
                 self.distractors.append(file.content[distractor.num])
 
         if len(self.distractors) == len(distractors):
@@ -128,21 +131,21 @@ class FindMutation(Question):
 class ClassifyMutation(Question):
     def __init__(
         self,
-        file: MutatedFile,
+        mutation: Mutation,
         mutation_num: int,
         prompt: str,
         distractors: List[Mutation],
     ):
         self.problem_id: str = (
-            "classifyMutation" + file.mutation.id.capitalize() + str(mutation_num)
+            "classifyMutation" + mutation.id.capitalize() + str(mutation_num)
         )
         self.problem_type: str = "classify mutation"
         self.prompt: str = prompt
-        self.answer: str = file.mutation.description
+        self.answer: str = mutation.description
         self.distractors: List[str] = []
 
         for distractor in distractors:
-            if distractor.description != file.mutation.description:
+            if distractor.description != mutation.description:
                 self.distractors.append(distractor.description)
 
         if len(self.distractors) == len(distractors):
@@ -152,23 +155,21 @@ class ClassifyMutation(Question):
 class FixMutation(Question):
     def __init__(
         self,
-        file: MutatedFile,
+        mutation: Mutation,
         mutation_num: int,
         prompt: str,
         distractors: List[Mutation],
     ):
         self.problem_id: str = (
-            "fixMutation" + file.mutation.id.capitalize() + str(mutation_num)
+            "fixMutation" + mutation.id.capitalize() + str(mutation_num)
         )
         self.problem_type: str = "fix mutation"
         self.prompt: str = prompt
-        self.answer: str = reverse(file.mutation.replacement).quiz_rep(
-            file.mutation.after
-        )
+        self.answer: str = reverse(mutation.replacement).quiz_rep(mutation.after)
 
         self.distractors: List[str] = []
         for distractor in distractors:
-            if distractor.replacement != file.mutation.replacement:
+            if distractor.replacement != mutation.replacement:
                 self.distractors.append(
                     distractor.replacement.quiz_rep(distractor.before)
                 )

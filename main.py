@@ -28,15 +28,8 @@ if __name__ == "__main__":
 
         if os.path.exists(filename):
             meta = customize_quiz()
-            file = File(filename, meta.max_mutations)
-            quiz = Quiz(
-                file=file,
-                reorder_prompt=meta.reorder_prompt,
-                find_mutation_prompt=meta.find_mutation_prompt,
-                classify_mutation_prompt=meta.classify_mutation_prompt,
-                fix_mutation_prompt=meta.fix_mutation_prompt,
-                mc_opts=meta.mc_distractors + 1,
-            )
+            file = File(filename, meta)
+            quiz = Quiz(file, meta)
             export_file(quiz, quiz_format, meta.quiz_title, meta.output_file)
             print("\nfile saved as {}.zip".format(meta.output_file))
         else:
