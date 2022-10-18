@@ -60,8 +60,7 @@ def customize_quiz() -> QuizMeta:
             )
 
             classify_mutation_prompt = (
-                input("classify mutation prompt: ")
-                or "what change needs to be made for the function to work properly?"
+                input("classify mutation prompt: ") or "what did this mutation do?"
             )
 
             fix_mutation_prompt = (
@@ -103,7 +102,7 @@ def customize_quiz() -> QuizMeta:
                 type="mutation",
                 reorder_prompt="correct the order of these lines.  one line contains an incorrect mutation, ignore it for now.",
                 find_mutation_prompt="which line contains the mutation?",
-                classify_mutation_prompt="what change needs to be made for the function to work properly?",
+                classify_mutation_prompt="what did this mutation do?",
                 fix_mutation_prompt="what change needs to be made for the function to work properly?",
                 max_mutations=10,
                 mc_distractors=3,
