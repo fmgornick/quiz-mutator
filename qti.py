@@ -61,7 +61,7 @@ def new_section(set: pg.ProblemSet):
     os.mkdir("package/items/" + set.mutation.id + "/" + set.id)
 
     add_dependencies(set)
-    order(set)
+    # order(set)
     multiple_choice(set, "findMutation")
     multiple_choice(set, "classifyMutation")
     multiple_choice(set, "fixMutation")
@@ -194,15 +194,7 @@ def make_parsons(question: pg.Parson):
 
         orderLine = file.createElement("simpleChoice")
         orderLine.setAttribute("identifier", "line" + str(i))
-
-        orderPar : md.Element = file.createElement("")
-        orderCode : md.Element = file.createElement("")
-        for split in line.split("\n"):
-            orderPar = file.createElement("p")
-            orderCode = file.createElement("code")
-            orderCode.appendChild(file.createTextNode(split))
-            orderPar.appendChild(orderCode)
-            orderLine.appendChild(orderPar)
+        set_line(file, orderLine, line)
 
         orderIDs.appendChild(orderID)
         orderLines.appendChild(orderLine)
@@ -212,58 +204,57 @@ def make_parsons(question: pg.Parson):
     f.close()
 
 
+# def order(set: pg.ProblemSet):
+#     newfile = "package/items/" + set.mutation.id + "/" + set.id + "/" + "Order.xml"
+#     fr = open("qti_templates/order_template.xml", "r")
+#     fw = open(newfile, "w")
+#     for line in fr:
+#         fw.write(line)
+#     fr.close()
+#     fw.close()
 
-def order(set: pg.ProblemSet):
-    newfile = "package/items/" + set.mutation.id + "/" + set.id + "/" + "Order.xml"
-    fr = open("qti_templates/order_template.xml", "r")
-    fw = open(newfile, "w")
-    for line in fr:
-        fw.write(line)
-    fr.close()
-    fw.close()
+#     file = md.parse(newfile)
 
-    file = md.parse(newfile)
+#     file.getElementsByTagName("assessmentItem")[0].setAttribute(
+#         "title", set.id + " Ordering Problem"
+#     )
+#     file.getElementsByTagName("assessmentItem")[0].setAttribute(
+#         "identifier", set.mutation.id + set.id
+#     )
+#     file.getElementsByTagName("prompt")[0].appendChild(
+#         file.createTextNode(set.order.prompt)
+#     )
 
-    file.getElementsByTagName("assessmentItem")[0].setAttribute(
-        "title", set.id + " Ordering Problem"
-    )
-    file.getElementsByTagName("assessmentItem")[0].setAttribute(
-        "identifier", set.mutation.id + set.id
-    )
-    file.getElementsByTagName("prompt")[0].appendChild(
-        file.createTextNode(set.order.prompt)
-    )
+#     matchIDs = file.getElementsByTagName("correctResponse")[0]
+#     mapping = file.getElementsByTagName("mapping")[0]
+#     qLines = file.getElementsByTagName("simpleMatchSet")[0]
+#     aLines = file.getElementsByTagName("simpleMatchSet")[1]
+#     for i, line in enumerate(set.content):
+#         matchID = file.createElement("value")
+#         matchID.appendChild(file.createTextNode("q" + str(i + 1) + " a" + str(i + 1)))
 
-    matchIDs = file.getElementsByTagName("correctResponse")[0]
-    mapping = file.getElementsByTagName("mapping")[0]
-    qLines = file.getElementsByTagName("simpleMatchSet")[0]
-    aLines = file.getElementsByTagName("simpleMatchSet")[1]
-    for i, line in enumerate(set.content):
-        matchID = file.createElement("value")
-        matchID.appendChild(file.createTextNode("q" + str(i + 1) + " a" + str(i + 1)))
+#         map = file.createElement("mapEntry")
+#         map.setAttribute("mapKey", "q" + str(i + 1) + " a" + str(i + 1))
+#         map.setAttribute("mappedValue", "1")
+#         mapping.appendChild(map)
 
-        map = file.createElement("mapEntry")
-        map.setAttribute("mapKey", "q" + str(i + 1) + " a" + str(i + 1))
-        map.setAttribute("mappedValue", "1")
-        mapping.appendChild(map)
+#         qLine = file.createElement("simpleAssociableChoice")
+#         qLine.setAttribute("identifier", "q" + str(i + 1))
+#         qLine.setAttribute("matchMax", "1")
+#         qLine.appendChild(file.createTextNode(str(i + 1)))
 
-        qLine = file.createElement("simpleAssociableChoice")
-        qLine.setAttribute("identifier", "q" + str(i + 1))
-        qLine.setAttribute("matchMax", "1")
-        qLine.appendChild(file.createTextNode(str(i + 1)))
+#         aLine = file.createElement("simpleAssociableChoice")
+#         aLine.setAttribute("identifier", "a" + str(i + 1))
+#         aLine.setAttribute("matchMax", "1")
+#         aLine.appendChild(file.createTextNode(line))
 
-        aLine = file.createElement("simpleAssociableChoice")
-        aLine.setAttribute("identifier", "a" + str(i + 1))
-        aLine.setAttribute("matchMax", "1")
-        aLine.appendChild(file.createTextNode(line))
+#         matchIDs.appendChild(matchID)
+#         qLines.appendChild(qLine)
+#         aLines.appendChild(aLine)
 
-        matchIDs.appendChild(matchID)
-        qLines.appendChild(qLine)
-        aLines.appendChild(aLine)
-
-    f = open(newfile, "w")
-    f.write(file.toxml())
-    f.close()
+#     f = open(newfile, "w")
+#     f.write(file.toxml())
+#     f.close()
 
 
 def multiple_choice(set: pg.ProblemSet, mc_field: str) -> None:
@@ -323,3 +314,20 @@ def multiple_choice(set: pg.ProblemSet, mc_field: str) -> None:
     f = open(newfile, "w")
     f.write(file.toxml())
     f.close()
+
+
+def set_line(file: md.Document, element : md.Element, line):
+    orderPar : md.Element = file.createElement("")
+    orderCode : md.Element = file.createElement("")
+    for c in line.comment:
+        orderPar = file.createElement("p")
+        orderCode = file.createElement("code")
+        orderCode.appendChild(file.createTextNode(c))
+        orderPar.appendChild(orderCode)
+        element.appendChild(orderPar)
+
+    orderPar = file.createElement("p")
+    orderCode = file.createElement("code")
+    orderCode.appendChild(file.createTextNode(line.line))
+    orderPar.appendChild(orderCode)
+    element.appendChild(orderPar)

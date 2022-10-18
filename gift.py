@@ -18,25 +18,25 @@ class GIFT:
                 f.write("::" + escape(q.prompt) + " {\n")
 
                 for i, line in enumerate(q.answer):
-                    f.write("\t={num} -> {line}\n".format(num=i, line=escape(line)))
+                    f.write("\t={num} -> {line}\n".format(num=i, line=escape(line.line)))
                 f.write("}\n\n")
 
             case "mutation":
                 for set in self.quiz.sets:
-                    order(set, f)
+                    # order(set, f)
                     multiple_choice(set, f, "findMutation")
                     multiple_choice(set, f, "classifyMutation")
                     multiple_choice(set, f, "fixMutation")
                     f.write("\n\n")
         f.close()
 
-def order(set: pg.ProblemSet, f: TextIO):
-    f.write("::" + escape(set.id) + " Ordering Problem\n")
-    f.write("::" + escape(set.order.prompt) + " {\n")
+# def order(set: pg.ProblemSet, f: TextIO):
+#     f.write("::" + escape(set.id) + " Ordering Problem\n")
+#     f.write("::" + escape(set.order.prompt) + " {\n")
 
-    for i, line in enumerate(set.order.answer):
-        f.write("\t={num} -> {line}\n".format(num=i, line=escape(line)))
-    f.write("}\n\n")
+#     for i, line in enumerate(set.order.answer):
+#         f.write("\t={num} -> {line}\n".format(num=i, line=escape(line)))
+#     f.write("}\n\n")
 
 def multiple_choice(set: pg.ProblemSet, f: TextIO, mc_field: str):
     match mc_field:
