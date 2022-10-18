@@ -32,7 +32,7 @@ if __name__ == "__main__":
             file = File(filename, meta)
             quiz = Quiz(file, meta)
             export_file(quiz, quiz_format, meta.quiz_title, meta.output_file)
-            print("\nfile saved as {}.{}".format(meta.output_file, "zip" if quiz_format == "QTI" else "txt"))
+            print("\nfile saved as {}.{}".format(meta.output_file, "zip" if quiz_format.lower() == "qti" else "txt"))
         else:
             print("error: invalid filename")
     except KeyboardInterrupt:
