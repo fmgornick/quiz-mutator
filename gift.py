@@ -18,7 +18,7 @@ class GIFT:
                 f.write("::" + escape(q.prompt) + " {\n")
 
                 for i, line in enumerate(q.answer):
-                    f.write("\t={num} -> {line}\n".format(num=i, line=escape(line.line)))
+                    f.write("\t={num} -> {line}\n".format(num=i, line=escape(line.code)))
                 f.write("}\n\n")
 
             case "mutation":

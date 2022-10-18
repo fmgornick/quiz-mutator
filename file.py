@@ -9,8 +9,8 @@ from quiz_meta import QuizMeta
 
 
 class Line:
-    def __init__(self, line: str, comment: List[str]):
-        self.line = line
+    def __init__(self, code: str, comment: List[str]):
+        self.code = code
         self.comment = comment
 
 
@@ -43,13 +43,13 @@ class File:
         if meta.type == "mutation":
             for line_num, line in enumerate(self.content):
                 for mutator_id, mutator in get_mutators().items():
-                    for replacement in mutator.find_mutations(line.line):
+                    for replacement in mutator.find_mutations(line.code):
                         self.mutations.append(
                             Mutation(
                                 mutator_id=mutator_id,
                                 description=mutator.description,
                                 line_num=line_num,
-                                line=line.line,
+                                line=line.code,
                                 replacement=replacement,
                             )
                         )

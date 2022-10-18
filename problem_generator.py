@@ -3,7 +3,7 @@ import random
 from pathlib import Path
 from typing import Dict, List
 
-from file import File, MutatedFile
+from file import File
 from mutation import Mutation, random_mutation
 from quiz_meta import QuizMeta
 from replacement import reverse
@@ -69,7 +69,7 @@ class ProblemSet:
         self.id = Path(file.filename).stem.capitalize() + str(mutation_num)
         self.mutation = mutation
         self.content = file.content
-        self.content[mutation.num].line = mutation.after
+        self.content[mutation.num].code = mutation.after
 
         # self.order = Reorder(self.content, mutation, mutation_num, prompts["reorder"])
         self.findMutation = FindMutation(file, mutation, mutation_num, prompts["find mutation"], distractors)
@@ -117,12 +117,12 @@ class FindMutation(Question):
         )
         self.problem_type: str = "find mutation"
         self.prompt: str = prompt
-        self.answer: str = file.content[mutation.num].line
+        self.answer: str = file.content[mutation.num].code
         self.distractors: List[str] = []
 
         for distractor in distractors:
             if distractor.before != mutation.before:
-                self.distractors.append(file.content[distractor.num].line)
+                self.distractors.append(file.content[distractor.num].code)
 
         if len(self.distractors) == len(distractors):
             self.distractors.pop()
