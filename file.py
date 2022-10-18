@@ -8,6 +8,12 @@ from mutator import get_mutators
 from quiz_meta import QuizMeta
 
 
+class Line:
+    def __init__(self, line: str, comment: List[str]):
+        self.line = line
+        self.comment = comment
+
+
 # contains:
 # - name of inputted file
 # - every line of the file
@@ -16,7 +22,7 @@ from quiz_meta import QuizMeta
 class File:
     def __init__(self, filename: str, meta: QuizMeta):
         self.filename: str = filename
-        self.content: List[str] = []
+        self.content: List[Line] = []
         self.mutations: List[Mutation] = []
 
         if not os.path.exists(filename):
@@ -37,13 +43,13 @@ class File:
         if meta.type == "mutation":
             for line_num, line in enumerate(self.content):
                 for mutator_id, mutator in get_mutators().items():
-                    for replacement in mutator.find_mutations(line):
+                    for replacement in mutator.find_mutations(line.line):
                         self.mutations.append(
                             Mutation(
                                 mutator_id=mutator_id,
                                 description=mutator.description,
                                 line_num=line_num,
-                                line=line,
+                                line=line.line,
                                 replacement=replacement,
                             )
                         )
@@ -52,9 +58,9 @@ class File:
                 self.mutations.pop(random.randrange(len(self.mutations)))
 
     # only retrieve lines contatining important stuff
-    def __get_lines(self) -> Generator[str, None, None]:
+    def __get_lines(self) -> Generator[Line, None, None]:
         in_comment = False
-        comment = ""
+        comment: List[str] = []
 
         for i, line in enumerate(self.full_content):
             stripped = line.strip()
@@ -70,7 +76,7 @@ class File:
                 or stripped.startswith("#")
                 or stripped.startswith("--")
             ):
-                comment += stripped + "\n"
+                comment.append(stripped)
                 continue
 
             # skip empty lines or "bracket onlys"
@@ -79,7 +85,7 @@ class File:
 
             # recognize the beginning of a line comment
             if stripped.startswith("/*"):
-                comment += stripped + "\n"
+                comment.append(stripped)
                 in_comment = True
                 if stripped.endswith("*/"):
                     in_comment = False
@@ -91,7 +97,7 @@ class File:
 
             # recognize the end of a line comment
             if stripped.endswith("*/"):
-                comment += stripped + "\n"
+                comment.append(stripped)
                 in_comment = False
                 continue
 
@@ -102,9 +108,8 @@ class File:
             # return line to mutate
             if not in_comment:
                 # print(stripped)
-                line = comment + stripped
-                comment = ""
-                yield line
+                comment.clear()
+                yield Line(line, comment)
 
 
 # contains:
