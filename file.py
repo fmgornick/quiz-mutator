@@ -54,6 +54,7 @@ class File:
     # only retrieve lines contatining important stuff
     def __get_lines(self) -> Generator[str, None, None]:
         in_comment = False
+        comment = ""
 
         for i, line in enumerate(self.full_content):
             stripped = line.strip()
@@ -65,6 +66,7 @@ class File:
 
             # skip line comments and preprocessor directives
             if stripped.startswith("//") or stripped.startswith("#"):
+                comment += stripped + "\n"
                 continue
 
             # skip empty lines or "bracket onlys"
@@ -73,6 +75,7 @@ class File:
 
             # recognize the beginning of a line comment
             if stripped.startswith("/*"):
+                comment += stripped + "\n"
                 in_comment = True
                 if stripped.endswith("*/"):
                     in_comment = False
@@ -84,6 +87,7 @@ class File:
 
             # recognize the end of a line comment
             if stripped.endswith("*/"):
+                comment += stripped + "\n"
                 in_comment = False
                 continue
 
@@ -94,7 +98,9 @@ class File:
             # return line to mutate
             if not in_comment:
                 # print(stripped)
-                yield stripped
+                line = comment + stripped
+                comment = ""
+                yield line
 
 
 # contains:

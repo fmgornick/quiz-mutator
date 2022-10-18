@@ -178,42 +178,34 @@ def make_parsons(question: pg.Parson):
     fr.close()
     fw.close()
 
-    file = md.parse(newfile)
-
+    file : md.Document = md.parse(newfile)
     file.getElementsByTagName("assessmentItem")[0].setAttribute(
         "title", question.id + " Parsons Problem"
     )
-    file.getElementsByTagName("assessmentItem")[0].setAttribute("identifier", question.id)
     file.getElementsByTagName("prompt")[0].appendChild(
         file.createTextNode(question.prompt)
     )
 
-    matchIDs = file.getElementsByTagName("correctResponse")[0]
-    mapping = file.getElementsByTagName("mapping")[0]
-    qLines = file.getElementsByTagName("simpleMatchSet")[0]
-    aLines = file.getElementsByTagName("simpleMatchSet")[1]
+    orderIDs = file.getElementsByTagName("correctResponse")[0]
+    orderLines = file.getElementsByTagName("orderInteraction")[0]
     for i, line in enumerate(question.answer):
-        matchID = file.createElement("value")
-        matchID.appendChild(file.createTextNode("q" + str(i + 1) + " a" + str(i + 1)))
+        orderID = file.createElement("value")
+        orderID.appendChild(file.createTextNode("line" + str(i)))
 
-        map = file.createElement("mapEntry")
-        map.setAttribute("mapKey", "q" + str(i + 1) + " a" + str(i + 1))
-        map.setAttribute("mappedValue", "1")
-        mapping.appendChild(map)
+        orderLine = file.createElement("simpleChoice")
+        orderLine.setAttribute("identifier", "line" + str(i))
 
-        qLine = file.createElement("simpleAssociableChoice")
-        qLine.setAttribute("identifier", "q" + str(i + 1))
-        qLine.setAttribute("matchMax", "1")
-        qLine.appendChild(file.createTextNode(str(i + 1)))
+        orderPar : md.Element = file.createElement("")
+        orderCode : md.Element = file.createElement("")
+        for split in line.split("\n"):
+            orderPar = file.createElement("p")
+            orderCode = file.createElement("code")
+            orderCode.appendChild(file.createTextNode(split))
+            orderPar.appendChild(orderCode)
+            orderLine.appendChild(orderPar)
 
-        aLine = file.createElement("simpleAssociableChoice")
-        aLine.setAttribute("identifier", "a" + str(i + 1))
-        aLine.setAttribute("matchMax", "1")
-        aLine.appendChild(file.createTextNode(line))
-
-        matchIDs.appendChild(matchID)
-        qLines.appendChild(qLine)
-        aLines.appendChild(aLine)
+        orderIDs.appendChild(orderID)
+        orderLines.appendChild(orderLine)
 
     f = open(newfile, "w")
     f.write(file.toxml())

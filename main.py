@@ -1,4 +1,5 @@
 import os
+# import shutil
 import sys
 
 from export import export_file
@@ -35,5 +36,6 @@ if __name__ == "__main__":
         else:
             print("error: invalid filename")
     except KeyboardInterrupt:
+        # shutil.rmtree("package", ignore_errors=True)
         print("\nbye!")
         exit()
