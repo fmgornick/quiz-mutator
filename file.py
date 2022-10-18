@@ -65,7 +65,11 @@ class File:
                 continue
 
             # skip line comments and preprocessor directives
-            if stripped.startswith("//") or stripped.startswith("#"):
+            if (
+                stripped.startswith("//")
+                or stripped.startswith("#")
+                or stripped.startswith("--")
+            ):
                 comment += stripped + "\n"
                 continue
 
