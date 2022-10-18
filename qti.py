@@ -54,6 +54,17 @@ class QTI:
         shutil.rmtree("package")
 
 
+def make_pretty(directory: str):
+    for filename in os.listdir(directory):
+        if os.path.isdir(os.path.join(directory, filename)):
+            make_pretty(os.path.join(directory, filename))
+        else:
+            file = md.parse(os.path.join(directory, filename))
+            f = open(os.path.join(directory, filename), "w")
+            f.write(file.toprettyxml())
+            f.close()
+
+
 def new_section(set: pg.ProblemSet):
     if not os.path.isdir("package/items/" + set.mutation.id):
         os.mkdir("package/items/" + set.mutation.id)
@@ -65,17 +76,6 @@ def new_section(set: pg.ProblemSet):
     multiple_choice(set, "findMutation")
     multiple_choice(set, "classifyMutation")
     multiple_choice(set, "fixMutation")
-
-
-def make_pretty(directory: str):
-    for filename in os.listdir(directory):
-        if os.path.isdir(os.path.join(directory, filename)):
-            make_pretty(os.path.join(directory, filename))
-        else:
-            file = md.parse(os.path.join(directory, filename))
-            f = open(os.path.join(directory, filename), "w")
-            f.write(file.toprettyxml())
-            f.close()
 
 
 def add_dependencies(set: pg.ProblemSet):
@@ -292,6 +292,7 @@ def multiple_choice(set: pg.ProblemSet, mc_field: str) -> None:
         "identifier", set.mutation.id + set.id
     )
     prompt = file.getElementsByTagName("prompt")[0]
+    show_code(file, prompt, set.content)
     prompt.appendChild(file.createTextNode(field.prompt))
 
     choices = file.getElementsByTagName("choiceInteraction")[0]
@@ -315,6 +316,19 @@ def multiple_choice(set: pg.ProblemSet, mc_field: str) -> None:
     f.write(file.toxml())
     f.close()
 
+
+def show_code(file: md.Document, element: md.Element, content):
+    orderPar : md.Element = file.createElement("")
+    orderCode : md.Element = file.createElement("")
+    for l in content:
+        orderPar = file.createElement("p")
+        orderPre = file.createElement("pre")
+        orderCode = file.createElement("code")
+        orderCode.appendChild(file.createTextNode(l.code))
+        orderPre.appendChild(orderCode)
+        orderPar.appendChild(orderPre)
+        element.appendChild(orderPar)
+    element.appendChild(file.createElement("p"))
 
 def set_line(file: md.Document, element : md.Element, line):
     orderPar : md.Element = file.createElement("")
