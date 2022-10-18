@@ -69,9 +69,9 @@ class ProblemSet:
         self.id = Path(file.filename).stem.capitalize() + str(mutation_num)
         self.mutation = mutation
         self.content = file.content
-        self.content[mutation.num] = mutation.after
+        self.content[mutation.num].line = mutation.after
 
-        self.order = Reorder(self.content, mutation, mutation_num, prompts["reorder"])
+        # self.order = Reorder(self.content, mutation, mutation_num, prompts["reorder"])
         self.findMutation = FindMutation(file, mutation, mutation_num, prompts["find mutation"], distractors)
         self.classifyMutation = ClassifyMutation(mutation, mutation_num, prompts["classify mutation"], distractors)
         self.fixMutation = FixMutation(mutation, mutation_num, prompts["fix mutation"], distractors)
@@ -117,12 +117,12 @@ class FindMutation(Question):
         )
         self.problem_type: str = "find mutation"
         self.prompt: str = prompt
-        self.answer: str = file.content[mutation.num]
+        self.answer: str = file.content[mutation.num].line
         self.distractors: List[str] = []
 
         for distractor in distractors:
             if distractor.before != mutation.before:
-                self.distractors.append(file.content[distractor.num])
+                self.distractors.append(file.content[distractor.num].line)
 
         if len(self.distractors) == len(distractors):
             self.distractors.pop()
