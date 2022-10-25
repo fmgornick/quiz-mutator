@@ -29,6 +29,7 @@ class File:
         self.filetype = filetype_dict[filename.split(".")[-1]]
         self.content: List[Line] = []
         self.mutations: List[Mutation] = []
+        self.potential_distractors: List[Mutation] = []
 
         if not os.path.exists(filename):
             print("ERROR: file not found")
@@ -58,6 +59,8 @@ class File:
                                 replacement=replacement,
                             )
                         )
+            for mut in self.mutations:
+                self.potential_distractors.append(mut)
 
             while len(self.mutations) > meta.max_mutations:
                 self.mutations.pop(random.randrange(len(self.mutations)))

@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import Dict, List
 
 from file import File
-from mutation import Mutation, random_mutation
+from mutation import Mutation
 from quiz_meta import QuizMeta
-from replacement import reverse
+from replacement import reverse_rep
 
 
 class Quiz:
@@ -24,35 +24,38 @@ class Quiz:
                     "fix mutation": meta.fix_mutation_prompt,
                 }
 
-                # random other possible mutations to serve that serve to distract quizee
-                # assuming 4 mc questions, we should have 3 distractors + the correct answer
-                distractors: List[Mutation] = get_distractors(file, meta.mc_distractors + 1)
-
                 self.sets: List[ProblemSet] = []
                 for i, mutation in enumerate(file.mutations):
-                    self.sets.append(ProblemSet(file, mutation, i, prompts, distractors))
+                    self.sets.append(ProblemSet(file, mutation, i, prompts, meta.mc_distractors))
 
 
 # creates 4 different distractors of random types
 # one extra ditractor just in case one manages to be the correct answer
 # if correct answer not in distractors, then 1 must get popped later
-def get_distractors(file: File, mc_opts: int) -> List[Mutation]:
+def get_distractors(mutation: Mutation, others: List[Mutation], num_distractors: int) -> List[Mutation]:
     mutation_distractors: List[Mutation] = []
-    unused_lines = copy.deepcopy(file.content)
+    ids: List[str] = []
+    # unused_lines = copy.deepcopy(file.content)
 
-    for mut in sorted(file.mutations, key=lambda _: random.random()):
-        if len(mutation_distractors) == mc_opts:
-            break
-        else:
-            mutation_distractors.append(mut)
+    # for mut in sorted(file.mutations, key=lambda _: random.random()):
+    #     if len(mutation_distractors) == mc_opts:
+    #         break
+    #     else:
+    #         mutation_distractors.append(mut)
 
     # add multiple choice distractors to our problem
     # make sure no two distractors are the same
-    while len(mutation_distractors) < mc_opts:
-        d = random_mutation(unused_lines, mutation_distractors)
-        for mut in mutation_distractors:
-            if d.after != mut.after:
+    while len(mutation_distractors) < num_distractors + 1:
+        # d = random_mutation(unused_lines, mutation_distractors)
+        # for mut in mutation_distractors:
+        #     if d.after != mut.after:
+        #         mutation_distractors.append(d)
+        
+        d = random.choice(list(others))
+        if d != mutation:
+            if d.id not in ids:
                 mutation_distractors.append(d)
+                ids.append(d.id)
 
     return mutation_distractors
 
@@ -64,18 +67,19 @@ class ProblemSet:
         mutation: Mutation,
         mutation_num: int,
         prompts: Dict[str, str],
-        distractors: List[Mutation],
+        num_distractors: int,
     ):
         self.id = Path(file.filename).stem.capitalize() + str(mutation_num)
         self.filetype = file.filetype
         self.mutation = mutation
-        self.content = file.content
+        self.content = copy.deepcopy(file.content)
         self.content[mutation.num].code = mutation.after
+        self.distractors = get_distractors(mutation, file.potential_distractors, num_distractors)
 
         # self.order = Reorder(self.content, mutation, mutation_num, prompts["reorder"])
-        self.findMutation = FindMutation(file, mutation, mutation_num, prompts["find mutation"], distractors)
-        self.classifyMutation = ClassifyMutation(mutation, mutation_num, prompts["classify mutation"], distractors)
-        self.fixMutation = FixMutation(mutation, mutation_num, prompts["fix mutation"], distractors)
+        self.findMutation = FindMutation(file, mutation, mutation_num, prompts["find mutation"], self.distractors)
+        self.classifyMutation = ClassifyMutation(mutation, mutation_num, prompts["classify mutation"], self.distractors)
+        self.fixMutation = FixMutation(mutation, mutation_num, prompts["fix mutation"], self.distractors)
 
 
 class Question:
@@ -118,7 +122,8 @@ class FindMutation(Question):
         )
         self.problem_type: str = "find mutation"
         self.prompt: str = prompt
-        self.answer: str = file.content[mutation.num].code
+        # self.answer: str = file.content[mutation.num].code
+        self.answer: str = mutation.after
         self.distractors: List[str] = []
 
         for distractor in distractors:
@@ -166,7 +171,7 @@ class FixMutation(Question):
         )
         self.problem_type: str = "fix mutation"
         self.prompt: str = prompt
-        self.answer: str = reverse(mutation.replacement).quiz_rep(mutation.after)
+        self.answer: str = reverse_rep(mutation.replacement).quiz_rep(mutation.after)
 
         self.distractors: List[str] = []
         for distractor in distractors:
