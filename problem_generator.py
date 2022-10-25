@@ -67,6 +67,7 @@ class ProblemSet:
         distractors: List[Mutation],
     ):
         self.id = Path(file.filename).stem.capitalize() + str(mutation_num)
+        self.filetype = file.filetype
         self.mutation = mutation
         self.content = file.content
         self.content[mutation.num].code = mutation.after
