@@ -1,6 +1,7 @@
 import random
 from typing import List
 
+from line import Line
 from mutator import Mutator, get_mutators
 from replacement import Replacement
 
@@ -35,7 +36,7 @@ class Mutation:
 # function used to create a random mutation on a file, used as a distractor
 # for a multiple choice question
 # TODO: change up logic of mutation generator function
-def random_mutation(content, existing: List[Mutation]) -> Mutation:
+def random_mutation(content: List[Line], existing: List[Mutation]) -> Mutation:
     mutators = get_mutators()
     unused_mutators = get_mutators()
     for mut in existing:
@@ -55,8 +56,8 @@ def random_mutation(content, existing: List[Mutation]) -> Mutation:
         mutator.mutator_id,
         mutator.description,
         line_num,
-        line.line,
-        random_replacement(mutator, line.line),
+        line.code,
+        random_replacement(mutator, line.code),
     )
 
 
