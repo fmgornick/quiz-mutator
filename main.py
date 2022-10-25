@@ -1,5 +1,5 @@
 import os
-# import shutil
+import shutil
 import sys
 
 from export import export_file
@@ -36,6 +36,11 @@ if __name__ == "__main__":
         else:
             print("error: invalid filename")
     except KeyboardInterrupt:
-        # shutil.rmtree("package", ignore_errors=True)
         print("\nbye!")
         exit()
+    except BaseException as err:
+        print(f"ERROR: {err=}, {type(err)=}")
+        if os.path.exists("package"):
+            print("removing package directory...")
+            shutil.rmtree("package", ignore_errors=True)
+        raise
