@@ -38,5 +38,5 @@ class Replacement:
         )
 
 
-def reverse(r: Replacement) -> Replacement:
+def reverse_rep(r: Replacement) -> Replacement:
     return Replacement(r.start_col, r.end_col, r.new_val, r.old_val)
