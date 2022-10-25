@@ -3,15 +3,19 @@ import os
 import random
 from typing import Generator, List
 
+from line import Line
 from mutation import Mutation
 from mutator import get_mutators
 from quiz_meta import QuizMeta
 
-
-class Line:
-    def __init__(self, code: str, comment: List[str]):
-        self.code = code
-        self.comment = comment
+filetype_dict = {
+    "c": "language-c",
+    "cc": "language-cpp",
+    "cpp": "language-cpp",
+    "hs": "language-haskell",
+    "js": "language-javascript",
+    "py": "language-python",
+}
 
 
 # contains:
@@ -22,6 +26,7 @@ class Line:
 class File:
     def __init__(self, filename: str, meta: QuizMeta):
         self.filename: str = filename
+        self.filetype = filetype_dict[filename.split(".")[-1]]
         self.content: List[Line] = []
         self.mutations: List[Mutation] = []
 
@@ -108,8 +113,9 @@ class File:
             # return line to mutate
             if not in_comment:
                 # print(stripped)
+                temp = copy.deepcopy(comment)
                 comment.clear()
-                yield Line(line, comment)
+                yield Line(line, temp)
 
 
 # contains:
