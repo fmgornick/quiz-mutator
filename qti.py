@@ -194,7 +194,21 @@ def make_parsons(question: pg.Parson):
 
         orderLine = file.createElement("simpleChoice")
         orderLine.setAttribute("identifier", "line" + str(i))
-        set_line(file, orderLine, line)
+        
+        orderPar : md.Element = file.createElement("")
+        orderCode : md.Element = file.createElement("")
+        for c in line.comment:
+            orderPar = file.createElement("p")
+            orderCode = file.createElement("code")
+            orderCode.appendChild(file.createTextNode(c))
+            orderPar.appendChild(orderCode)
+            orderLine.appendChild(orderPar)
+
+        orderPar = file.createElement("p")
+        orderCode = file.createElement("code")
+        orderCode.appendChild(file.createTextNode(line.code))
+        orderPar.appendChild(orderCode)
+        orderLine.appendChild(orderPar)
 
         orderIDs.appendChild(orderID)
         orderLines.appendChild(orderLine)
@@ -292,7 +306,7 @@ def multiple_choice(set: pg.ProblemSet, mc_field: str) -> None:
         "identifier", set.mutation.id + set.id
     )
     prompt = file.getElementsByTagName("prompt")[0]
-    show_code(file, prompt, set.content)
+    show_code(file, prompt, set.content, set.filetype)
     prompt.appendChild(file.createTextNode(field.prompt))
 
     choices = file.getElementsByTagName("choiceInteraction")[0]
@@ -317,13 +331,14 @@ def multiple_choice(set: pg.ProblemSet, mc_field: str) -> None:
     f.close()
 
 
-def show_code(file: md.Document, element: md.Element, content):
+def show_code(file: md.Document, element: md.Element, content, filetype: str):
     orderPar : md.Element = file.createElement("")
     orderCode : md.Element = file.createElement("")
     for l in content:
         orderPar = file.createElement("p")
         orderPre = file.createElement("pre")
         orderCode = file.createElement("code")
+        orderCode.setAttribute("class", filetype)
         orderCode.appendChild(file.createTextNode(l.code))
         orderPre.appendChild(orderCode)
         orderPar.appendChild(orderPre)
@@ -342,6 +357,7 @@ def set_line(file: md.Document, element : md.Element, line):
 
     orderPar = file.createElement("p")
     orderCode = file.createElement("code")
-    orderCode.appendChild(file.createTextNode(line.line))
+    orderCode.appendChild(file.createTextNode(line.code))
     orderPar.appendChild(orderCode)
     element.appendChild(orderPar)
+    print(element)
