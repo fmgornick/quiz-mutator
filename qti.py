@@ -3,6 +3,7 @@ import shutil
 import xml.dom.minidom as md
 
 import problem_generator as pg
+from line import LineGroup
 
 
 class QTI:
@@ -188,7 +189,7 @@ def make_parsons(question: pg.Parson):
 
     orderIDs = file.getElementsByTagName("correctResponse")[0]
     orderLines = file.getElementsByTagName("orderInteraction")[0]
-    for i, line in enumerate(question.answer):
+    for i, group in enumerate(question.answer.linegroups):
         orderID = file.createElement("value")
         orderID.appendChild(file.createTextNode("line" + str(i)))
 
@@ -197,18 +198,19 @@ def make_parsons(question: pg.Parson):
         
         orderPar : md.Element = file.createElement("")
         orderCode : md.Element = file.createElement("")
-        for c in line.comment:
+        for line in group:
+            for c in line.comment:
+                orderPar = file.createElement("p")
+                orderCode = file.createElement("code")
+                orderCode.appendChild(file.createTextNode(c))
+                orderPar.appendChild(orderCode)
+                orderLine.appendChild(orderPar)
+
             orderPar = file.createElement("p")
             orderCode = file.createElement("code")
-            orderCode.appendChild(file.createTextNode(c))
+            orderCode.appendChild(file.createTextNode(line.code))
             orderPar.appendChild(orderCode)
             orderLine.appendChild(orderPar)
-
-        orderPar = file.createElement("p")
-        orderCode = file.createElement("code")
-        orderCode.appendChild(file.createTextNode(line.code))
-        orderPar.appendChild(orderCode)
-        orderLine.appendChild(orderPar)
 
         orderIDs.appendChild(orderID)
         orderLines.appendChild(orderLine)
@@ -331,19 +333,20 @@ def multiple_choice(set: pg.ProblemSet, mc_field: str) -> None:
     f.close()
 
 
-def show_code(file: md.Document, element: md.Element, content, filetype: str):
+def show_code(file: md.Document, element: md.Element, content: LineGroup, filetype: str):
     orderPar : md.Element = file.createElement("")
     orderCode : md.Element = file.createElement("")
-    for l in content:
-        orderPar = file.createElement("p")
-        orderPre = file.createElement("pre")
-        orderCode = file.createElement("code")
-        orderCode.setAttribute("class", filetype)
-        orderCode.appendChild(file.createTextNode(l.code))
-        orderPre.appendChild(orderCode)
-        orderPar.appendChild(orderPre)
-        element.appendChild(orderPar)
-    element.appendChild(file.createElement("p"))
+    for group in content.linegroups:
+        for l in group:
+            orderPar = file.createElement("p")
+            orderPre = file.createElement("pre")
+            orderCode = file.createElement("code")
+            orderCode.setAttribute("class", filetype)
+            orderCode.appendChild(file.createTextNode(l.code))
+            orderPre.appendChild(orderCode)
+            orderPar.appendChild(orderPre)
+            element.appendChild(orderPar)
+        element.appendChild(file.createElement("p"))
 
 def set_line(file: md.Document, element : md.Element, line):
     orderPar : md.Element = file.createElement("")

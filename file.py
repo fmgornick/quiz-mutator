@@ -3,7 +3,7 @@ import os
 import random
 from typing import Generator, List
 
-from line import Line
+from line import Line, LineGroup, group_lines
 from mutation import Mutation
 from mutator import get_mutators
 from quiz_meta import QuizMeta
@@ -27,9 +27,11 @@ class File:
     def __init__(self, filename: str, meta: QuizMeta):
         self.filename: str = filename
         self.filetype = filetype_dict[filename.split(".")[-1]]
-        self.content: List[Line] = []
+        self.content: LineGroup
         self.mutations: List[Mutation] = []
         self.potential_distractors: List[Mutation] = []
+
+        content: List[Line] = []
 
         if not os.path.exists(filename):
             print("ERROR: file not found")
@@ -39,15 +41,17 @@ class File:
             self.full_content = [x.rstrip() for x in f.read().splitlines()]
 
             for line in self.__get_lines():
-                self.content.append(line)
+                content.append(line)
 
             f.close()
 
         except FileNotFoundError:
             print(filename + " doesn't exist")
 
+        self.content = group_lines(content)
+
         if meta.type == "mutation":
-            for line_num, line in enumerate(self.content):
+            for line_num, line in enumerate(content):
                 for mutator_id, mutator in get_mutators().items():
                     for replacement in mutator.find_mutations(line.code):
                         self.mutations.append(

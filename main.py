@@ -13,11 +13,11 @@ if __name__ == "__main__":
             # no input - just run the program
             case 1:
                 filename = input("file path: ")
-                quiz_format = input('do you want QTI or GIFT format? (default = "QTI"): ') or "QTI"
+                quiz_format = input("do you want QTI or GIFT format? (default = \"QTI\"): ") or "QTI"
             # filename provided
             case 2:
                 filename = sys.argv[1]
-                quiz_format = input('do you want QTI or GIFT format? (default = "QTI"): ') or "QTI"
+                quiz_format = input("do you want QTI or GIFT format? (default = \"QTI\"): ") or "QTI"
             # filename + file format provided
             case 3:
                 filename = sys.argv[1]
