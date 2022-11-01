@@ -8,14 +8,37 @@ from mutation import Mutation
 from mutator import get_mutators
 from quiz_meta import QuizMeta
 
-filetype_dict = {
-    "c": "language-c",
-    "cc": "language-cpp",
-    "cpp": "language-cpp",
-    "hs": "language-haskell",
-    "js": "language-javascript",
-    "py": "language-python",
-}
+
+class ExtMeta:
+    def __init__(self, filename: str):
+        ext: str = filename.split(".")[-1]
+        match ext:
+            case "c":
+                self.type = "c"
+                self.html = "language-c"
+                self.comment = " // "
+            case "cc" | "cpp":
+                self.type = "cpp"
+                self.html = "language-cpp"
+                self.comment = " // "
+            case "hs":
+                self.type = "haskell"
+                self.html = "language-haskell"
+                self.comment = " -- "
+            case "js" | "ts":
+                self.type = "javascript"
+                self.html = "language-javascript"
+                self.comment = " // "
+            case "py":
+                self.type = "python"
+                self.html = "language-python"
+                self.comment = " # "
+            # if it's not recognizable we'll just assume it's c
+            case _:
+                self.html = "language-c"
+                self.comment = " // "
+
+
 
 
 # contains:
@@ -26,7 +49,6 @@ filetype_dict = {
 class File:
     def __init__(self, filename: str, meta: QuizMeta):
         self.filename: str = filename
-        self.filetype = filetype_dict[filename.split(".")[-1]]
         self.content: LineGroup
         self.mutations: List[Mutation] = []
         self.potential_distractors: List[Mutation] = []
@@ -71,7 +93,11 @@ class File:
 
     # only retrieve lines contatining important stuff
     def __get_lines(self) -> Generator[Line, None, None]:
-        in_comment = False
+        # for tracking nested comments
+        comment_type = ExtMeta(self.filename).comment
+        nested_comments: int = 0
+        prev_line: str = ""
+        bracket_lines: List[str] = []
         comment: List[str] = []
 
         for i, line in enumerate(self.full_content):
@@ -83,24 +109,16 @@ class File:
                 continue
 
             # skip line comments and preprocessor directives
-            if (
-                stripped.startswith("//")
-                or stripped.startswith("#")
-                or stripped.startswith("--")
-            ):
+            if (stripped.startswith(comment_type.strip())):
                 comment.append(stripped)
-                continue
-
-            # skip empty lines or "bracket onlys"
-            if stripped in ["", "{", "}", "};", "});", ")"]:
                 continue
 
             # recognize the beginning of a line comment
             if stripped.startswith("/*"):
                 comment.append(stripped)
-                in_comment = True
+                nested_comments += 1
                 if stripped.endswith("*/"):
-                    in_comment = False
+                    nested_comments -= 1
                 continue
 
             # skip "private" or "protected" declaration
@@ -110,15 +128,26 @@ class File:
             # recognize the end of a line comment
             if stripped.endswith("*/"):
                 comment.append(stripped)
-                in_comment = False
+                nested_comments -= 1
                 continue
 
-            # remove opening braces
             if stripped.endswith("{"):
-                stripped = stripped[:-1]
+                bracket_lines.append(stripped[:-1])
+
+            if stripped == "{" and nested_comments == 0:
+                bracket_lines.append(prev_line)
+                temp = copy.deepcopy(comment)
+                comment.clear()
+                yield Line(line + comment_type + prev_line, temp)
+
+            if stripped in ["}", "};", "});"] and nested_comments == 0:
+                temp = copy.deepcopy(comment)
+                comment.clear()
+                yield Line(line + comment_type + bracket_lines.pop(), temp)
+                continue
 
             # return line to mutate
-            if not in_comment:
+            if nested_comments == 0:
                 # print(stripped)
                 temp = copy.deepcopy(comment)
                 comment.clear()
