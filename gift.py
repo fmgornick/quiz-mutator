@@ -1,5 +1,7 @@
+import copy
 import re
-from typing import TextIO
+import xml.dom.minidom as md
+from typing import List, TextIO
 
 import problem_generator as pg
 
@@ -7,36 +9,60 @@ import problem_generator as pg
 class GIFT:
     def __init__(self, quiz: pg.Quiz, output: str = "gift"):
         self.quiz = quiz
-        self.output = output
+        self.output = output + ".xml"
+
+        fr = open("qti_templates/gift_order.xml", "r")
+        fw = open(self.output, "w")
+        for line in fr:
+            fw.write(line)
+        fr.close()
+        fw.close()
 
     def make_quiz(self):
-        f = open(self.output + ".txt", "a")
         match self.quiz.type:
             case "parsons":
+                file = md.parse(self.output)
                 q = self.quiz.question
-                f.write("::" + escape(q.id) + " Ordering Problem\n")
-                f.write("::" + escape(q.prompt) + " {\n")
 
-                for i, line in enumerate(q.answer):
-                    f.write("\t={num} -> {line}\n".format(num=i, line=escape(line.code)))
-                f.write("}\n\n")
+                data: str = "\n"
+                all_wrong: str = ""
+                tilde_idxs: List[int] = []
+
+                for j, lines in enumerate(q.answer.linegroups):
+                    tilde_idxs.append(len(all_wrong))
+                    if j != 0:
+                        all_wrong += "~"
+                    for line in lines:
+                        for c in line.comment:
+                            all_wrong += escape(c)
+                        all_wrong += escape(line.code)
+                    all_wrong += "#line num should be " + str(j)
+
+                for j in range(0, len(q.answer.linegroups)):
+                    opt: str = copy.deepcopy(all_wrong)
+                    idx = tilde_idxs[j]
+                    if j == 0:
+                        opt = "%100%" + opt
+                    else:
+                        opt = opt[:idx+1] + "%100%" + opt[idx+1:]
+                    data += "<p dir=\"ltr\">" + str(j) + ") {1:MULTICHOICE:" + opt + "}</p>\n"
+
+                cdata = file.createCDATASection(data)
+                file.getElementsByTagName("text")[0].appendChild(file.createTextNode(q.prompt))
+                file.getElementsByTagName("text")[1].appendChild(cdata)
+                f = open(self.output, "w")
+                f.write(file.toprettyxml())
+                f.close()
 
             case "mutation":
+                f = open(self.output, "a")
                 for set in self.quiz.sets:
                     # order(set, f)
                     multiple_choice(set, f, "findMutation")
                     multiple_choice(set, f, "classifyMutation")
                     multiple_choice(set, f, "fixMutation")
                     f.write("\n\n")
-        f.close()
-
-# def order(set: pg.ProblemSet, f: TextIO):
-#     f.write("::" + escape(set.id) + " Ordering Problem\n")
-#     f.write("::" + escape(set.order.prompt) + " {\n")
-
-#     for i, line in enumerate(set.order.answer):
-#         f.write("\t={num} -> {line}\n".format(num=i, line=escape(line)))
-#     f.write("}\n\n")
+                f.close()
 
 def multiple_choice(set: pg.ProblemSet, f: TextIO, mc_field: str):
     match mc_field:
@@ -62,7 +88,9 @@ def multiple_choice(set: pg.ProblemSet, f: TextIO, mc_field: str):
 
 def escape(line: str) -> str:
     return re.sub(
-        r'(\~|\=|\#|\{|\}|\:)',
-        lambda m:{'~':'\~','=':'\=','#':'\#','{':'\{','}':'\}',':':'\:'}[m.group()],
+        # r'(\~|\=|\#|\{|\}|\:)',
+        # lambda m:{'~':'\~','=':'\=','#':'\#','{':'\{','}':'\}',':':'\:'}[m.group()],
+        r'(\~|\#|\}|\:)|\<|\>',
+    lambda m:{'~':'\~','#':'\#','}':'\}',':':'\:','<':'&lt;','>':'&gt;'}[m.group()],
         line
     )
