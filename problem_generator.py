@@ -70,7 +70,6 @@ class ProblemSet:
         num_distractors: int,
     ):
         self.id = Path(file.filename).stem.capitalize() + str(mutation_num)
-        self.filetype = file.filetype
         self.mutation = mutation
         self.content = copy.deepcopy(file.content)
         self.content[mutation.num].code = mutation.after

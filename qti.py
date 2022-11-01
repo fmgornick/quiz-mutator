@@ -308,7 +308,7 @@ def multiple_choice(set: pg.ProblemSet, mc_field: str) -> None:
         "identifier", set.mutation.id + set.id
     )
     prompt = file.getElementsByTagName("prompt")[0]
-    show_code(file, prompt, set.content, set.filetype)
+    show_code(file, prompt, set.content)
     prompt.appendChild(file.createTextNode(field.prompt))
 
     choices = file.getElementsByTagName("choiceInteraction")[0]
@@ -333,7 +333,7 @@ def multiple_choice(set: pg.ProblemSet, mc_field: str) -> None:
     f.close()
 
 
-def show_code(file: md.Document, element: md.Element, content: LineGroup, filetype: str):
+def show_code(file: md.Document, element: md.Element, content: LineGroup):
     orderPar : md.Element = file.createElement("")
     orderCode : md.Element = file.createElement("")
     for group in content.linegroups:
@@ -341,7 +341,6 @@ def show_code(file: md.Document, element: md.Element, content: LineGroup, filety
             orderPar = file.createElement("p")
             orderPre = file.createElement("pre")
             orderCode = file.createElement("code")
-            orderCode.setAttribute("class", filetype)
             orderCode.appendChild(file.createTextNode(l.code))
             orderPre.appendChild(orderCode)
             orderPar.appendChild(orderPre)
