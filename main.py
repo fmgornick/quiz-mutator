@@ -13,11 +13,11 @@ if __name__ == "__main__":
             # no input - just run the program
             case 1:
                 filename = input("file path: ")
-                quiz_format = input("do you want QTI or GIFT format? (default = \"QTI\"): ") or "QTI"
+                quiz_format = input("canvas (QTI) or moodle (Moodle XML) format? (default = \"canvas\"): ") or "canvas"
             # filename provided
             case 2:
                 filename = sys.argv[1]
-                quiz_format = input("do you want QTI or GIFT format? (default = \"QTI\"): ") or "QTI"
+                quiz_format = input("canvas (QTI) or moodle (Moodle XML) format? (default = \"canvas\"): ") or "canvas"
             # filename + file format provided
             case 3:
                 filename = sys.argv[1]
@@ -32,7 +32,7 @@ if __name__ == "__main__":
             file = File(filename, meta)
             quiz = Quiz(file, meta)
             export_file(quiz, quiz_format, meta.quiz_title, meta.output_file)
-            print("\nfile saved as {}.{}".format(meta.output_file, "zip" if quiz_format.lower() == "qti" else "txt"))
+            print("\nfile saved as {}.{}".format(meta.output_file, "zip" if quiz_format.lower() == "canvas" else "xml"))
         else:
             print("error: invalid filename")
     except KeyboardInterrupt:
