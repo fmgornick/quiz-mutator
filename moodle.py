@@ -144,6 +144,6 @@ def escape(line: str) -> str:
 def moodle_escape(line: str) -> str:
     return re.sub(
         r'(\#|\<|\>|\{|\}|~)',
-        lambda m:{'#':' ','<':'&lt;','>':'&gt;','{':'\{','}':'\}','~':'\~'}[m.group()],
+        lambda m:{'#':'\#','<':'&lt;','>':'&gt;','{':'\{','}':'\}','~':'\~'}[m.group()],
         line
     )
