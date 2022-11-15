@@ -1,11 +1,13 @@
 import copy
 import os
+import re
 import xml.dom.minidom as md
 from typing import List
-# import re
-from xml.sax.saxutils import escape
 
 import problem_generator as pg
+
+# from xml.sax.saxutils import escape
+
 
 # from xml.sax.saxutils import escape
 
@@ -27,9 +29,15 @@ class Moodle:
         match self.quiz.type:
             case "parsons":
                 file = md.parse(self.output)
+                quiz = file.getElementsByTagName("quiz")[0]
+
+                cloze = md.parse("templates/moodle/cloze.xml")
+                q_xml = cloze.getElementsByTagName("question")[0]
+
                 q = self.quiz.question
 
                 data: str = "\n"
+                data += "<p dir=\"ltr\">" + q.prompt + "</p>\n"
                 all_wrong: str = ""
                 tilde_idxs: List[int] = []
 
@@ -39,8 +47,8 @@ class Moodle:
                         all_wrong += "~"
                     for line in lines:
                         for c in line.comment:
-                            all_wrong += escape(c)
-                        all_wrong += escape(line.code)
+                            all_wrong += moodle_escape(c)
+                        all_wrong += moodle_escape(line.code)
                     all_wrong += "#line num should be " + str(i)
 
                 for j in range(0, len(q.answer.linegroups)):
@@ -53,33 +61,36 @@ class Moodle:
                     data += "<p dir=\"ltr\">" + str(j) + ") {1:MULTICHOICE:" + opt + "}</p>\n"
 
                 cdata = file.createCDATASection(data)
-                file.getElementsByTagName("text")[0].appendChild(file.createTextNode(q.prompt))
-                file.getElementsByTagName("text")[1].appendChild(cdata)
+                q_xml.getElementsByTagName("text")[0].appendChild(file.createTextNode("Parsons Problem"))
+                q_xml.getElementsByTagName("text")[1].appendChild(cdata)
+                quiz.appendChild(q_xml)
                 f = open(self.output, "w")
                 f.write(file.toprettyxml())
                 f.close()
 
             case "mutation":
                 ids = ["findMutation", "classifyMutation", "fixMutation"]
-                os.mkdir("package")
-                for i, set in enumerate(self.quiz.sets):
-                    fname = "package/" + set.id + ".xml"
-                    fr = open("templates/moodle/embedded.xml", "r")
-                    fw = open(fname, "w")
-                    for line in fr:
-                        fw.write(line)
-                    fr.close()
-                    fw.close()
 
-                    file = md.parse(fname)
-                    # q = self.quiz.question
+                fr = open("templates/moodle/embedded.xml", "r")
+                fw = open(self.output, "w")
+                for line in fr:
+                    fw.write(line)
+                fr.close()
+                fw.close()
+
+                file = md.parse(self.output)
+                quiz = file.getElementsByTagName("quiz")[0]
+
+                for i, set in enumerate(self.quiz.sets):
+                    cloze = md.parse("templates/moodle/cloze.xml")
+                    q_xml = cloze.getElementsByTagName("question")[0]
 
                     data: str = "\n"
                     all_wrong: str = ""
                     tilde_idxs: List[int] = []
 
-                    qtitle = file.getElementsByTagName("text")[0]
-                    qtext = file.getElementsByTagName("text")[1]
+                    qtitle = q_xml.getElementsByTagName("text")[0]
+                    qtext = q_xml.getElementsByTagName("text")[1]
                     question = "\n"
 
                     for group in set.content.linegroups:
@@ -91,12 +102,14 @@ class Moodle:
                     for id in ids:
                         data += multiple_choice(set, id)
 
-                    cdata = file.createCDATASection(question + "<br>\n" + data)
-                    qtitle.appendChild(file.createTextNode("Mutation Problem " + str(i)))
+                    cdata = cloze.createCDATASection(question + "<br>\n" + data)
+                    qtitle.appendChild(cloze.createTextNode("Mutation Problem " + str(i)))
                     qtext.appendChild(cdata)
-                    f = open(fname, "w")
-                    f.write(file.toprettyxml())
-                    f.close()
+                    quiz.appendChild(q_xml)
+
+                f = open(self.output, "w")
+                f.write(file.toprettyxml())
+                f.close()
 
 def multiple_choice(set: pg.ProblemSet, mc_field: str) -> str:
     match mc_field:
@@ -114,16 +127,23 @@ def multiple_choice(set: pg.ProblemSet, mc_field: str) -> str:
             return ""
 
     q: str = "<p dir=\"ltr\">" + field.prompt + "  " + "{1:MULTICHOICE:%100%" 
-    q += escape(field.answer) + "#correct!"
+    q += moodle_escape(field.answer) + "#correct!"
     for distractor in field.distractors:
-        q += "~" + escape(distractor) + "#not quite!"
+        q += "~" + moodle_escape(distractor.strip()) + "#not quite!"
     q += "}</p>\n"
 
     return q
 
-# def escape(line: str) -> str:
-#     return re.sub(
-#         r'(\#|\<|\>)',
-#         lambda m:{'#':'&num;','<':'&lt;','>':'&gt;'}[m.group()],
-#         line
-#     )
+def escape(line: str) -> str:
+    return re.sub(
+        r'(\<|\>)',
+        lambda m:{'<':'&lt;','>':'&gt;'}[m.group()],
+        line
+    )
+
+def moodle_escape(line: str) -> str:
+    return re.sub(
+        r'(\#|\<|\>|\{|\}|~)',
+        lambda m:{'#':' ','<':'&lt;','>':'&gt;','{':'\{','}':'\}','~':'\~'}[m.group()],
+        line
+    )
