@@ -29,7 +29,7 @@ class Replacement:
     def quiz_rep(self, line: str) -> str:
         return (
             '[({begin_col}:{end_col}) "{old_val}" -> "{new_val}"] in "{line}"'.format(
-                line=line,
+                line=line.strip(),
                 begin_col=self.start_col,
                 end_col=self.end_col,
                 old_val=self.old_val,
