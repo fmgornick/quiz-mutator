@@ -15,67 +15,68 @@ class Moodle:
         self.quiz = quiz
         self.output = output + ".xml"
 
-        fr = open("templates/moodle/embedded.xml", "r")
-        fw = open(self.output, "w")
-        for line in fr:
-            fw.write(line)
-        fr.close()
-        fw.close()
+        # fr = open("templates/moodle/embedded.xml", "r")
+        # fw = open(self.output, "w")
+        # for line in fr:
+        #     fw.write(line)
+        # fr.close()
+        # fw.close()
 
     # called to generate Moodle XML file
     def make_quiz(self):
         match self.quiz.type:
             # if no mutations, then it's just a parsons problem, so generate 1 question
             case "parsons":
+                q = self.quiz.question
+                a = q.answer
+
+                fr = open("templates/moodle/matching.xml", "r")
+                fw = open(self.output, "w")
+                for line in fr:
+                    fw.write(line)
+                fr.close()
+                fw.close()
+
                 # copy GIFT cloze style template into output file
                 file = md.parse(self.output)
                 quiz = file.getElementsByTagName("quiz")[0]
+                penalty = file.getElementsByTagName("penalty")[0]
+                penalty.appendChild(file.createTextNode("{}".format(1 / a.length)))
+                question = file.getElementsByTagName("question")[0]
 
-                cloze = md.parse("templates/moodle/cloze.xml")
-                q_xml = cloze.getElementsByTagName("question")[0]
+                file.getElementsByTagName("text")[0].appendChild(file.createTextNode("Parsons"))
+                file.getElementsByTagName("text")[1].appendChild(file.createTextNode(q.prompt))
 
-                q = self.quiz.question
+                linenum = 1
+                for group in a.linegroups:
+                    for line in group:
+                        for i, l in enumerate(line.content):
+                            subq = file.createElement("subquestion")
+                            subq.setAttribute("format", "html")
 
-                # format question in basic xml tags
-                data: str = "\n"
-                data += "<p dir=\"ltr\">" + q.prompt + "</p>\n"
-                # every line of parsons problem in each matching question, starts off with no 
-                # correct line, then we add credit later
-                all_wrong: str = ""
-                # tildes used to separate lines in questions, so we must keep track of them
-                # to know where to put credit for answers
-                tilde_idxs: List[int] = []
+                            data = "<p dir=\"ltr\" style=\"text-align: left;\">" + str(linenum) + "</p>"
+                            qtext = file.createElement("text")
+                            qtext.appendChild(file.createCDATASection(data))
 
-                # add each line to our GIFT prompt
-                for i, lines in enumerate(q.answer.linegroups):
-                    tilde_idxs.append(len(all_wrong))
-                    if i != 0:
-                        all_wrong += "~"
-                    for line in lines:
-                        for c in line.comment:
-                            all_wrong += moodle_escape(c)
-                        all_wrong += moodle_escape(line.code)
-                    all_wrong += "#line num should be " + str(i)
+                            answer = file.createElement("answer")
+                            atext = file.createElement("text")
+                            if len(line.content) == 1:
+                                atext.appendChild(file.createTextNode(l))
+                            else:
+                                atext.appendChild(file.createTextNode(l + " (part " + str(i+1) + ")"))
+                            answer.appendChild(atext)
 
-                # wrap lines in GIFT question and add credit
-                # once done, the lines get added to the CDATA section of our XML file
-                for j in range(0, len(q.answer.linegroups)):
-                    opt: str = copy.deepcopy(all_wrong)
-                    idx = tilde_idxs[j]
-                    if j == 0:
-                        opt = "%100%" + opt
-                    else:
-                        opt = opt[:idx+1] + "%100%" + opt[idx+1:]
-                    data += "<p dir=\"ltr\">" + str(j) + ") {1:MULTICHOICE:" + opt + "}</p>\n"
+                            subq.appendChild(qtext)
+                            subq.appendChild(answer)
+                            question.appendChild(subq)
+
+                            linenum += 1
 
                 # write data to XML
-                cdata = file.createCDATASection(data)
-                q_xml.getElementsByTagName("text")[0].appendChild(file.createTextNode("Parsons Problem"))
-                q_xml.getElementsByTagName("text")[1].appendChild(cdata)
-                quiz.appendChild(q_xml)
                 f = open(self.output, "w")
                 f.write(file.toprettyxml())
                 f.close()
+
 
             # if there are mutations, then for each one, generate a new question
             # questions split into three parts for each mutation
