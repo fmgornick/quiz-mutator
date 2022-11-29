@@ -140,7 +140,7 @@ class File:
                 continue
 
             if stripped.endswith("{"):
-                bracket_lines.append(stripped[:-1])
+                bracket_lines.append(stripped)
 
             if stripped == "{" and nested_comments == 0:
                 bracket_lines.append(prev_line)
