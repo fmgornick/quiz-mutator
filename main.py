@@ -28,14 +28,23 @@ if __name__ == "__main__":
                 exit()
 
         if os.path.exists(filename):
+            # ask questions about the file and store in MetaData object
             meta = customize_quiz()
+            # create file object from metadata and VALID file path
             file = File(filename, meta)
+            # create quiz object containing problem sets and questions based off file and metadata
             quiz = Quiz(file, meta)
+            # create output depending on user's specified format
             export_file(quiz, quiz_format, meta.quiz_title, meta.output_file)
             print("\nfile saved as {}.{}".format(meta.output_file, "zip" if quiz_format.lower() == "canvas" else "xml"))
         else:
             print("error: invalid filename")
+    
+    # if user quits with ^C or there's an exception, make sure to clean up
     except KeyboardInterrupt:
+        if os.path.exists("package"):
+            print("removing package directory...")
+            shutil.rmtree("package", ignore_errors=True)
         print("\nbye!")
         exit()
     except BaseException as err:

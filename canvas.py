@@ -6,7 +6,11 @@ import problem_generator as pg
 from line import LineGroup
 
 
+# CLASS:   Canvas
+# MEMBERS: generic quiz object + extra meta data for outputted zip
+# METHODS: make_quiz
 class Canvas:
+    # CONSTRUCTOR - assigns arguments and creates template files for QTI formatted zip
     def __init__(
         self,
         quiz: pg.Quiz,
@@ -43,18 +47,25 @@ class Canvas:
         if quiz.type == "mutation":
             os.mkdir("package/items")
 
+    # called to generate QTI formatted zip file
     def make_quiz(self):
         match self.quiz.type:
+            # if no mutations, then it's just a parsons problem, so generate 1 question
             case "parsons":
                 make_parsons(self.quiz.question)
+            # if there are mutations, then for each one, generate a new section of questions
+            # Find / Classify / Fix Mutation
             case "mutation":
                 for set in self.quiz.sets:
                     new_section(set)
+        # once all the files generated, turn them into a zip and remove the directory
         make_pretty("package")
         shutil.make_archive(self.zip, "zip", "package")
         shutil.rmtree("package")
 
 
+# go through each generated file and add spacing to the lines so it has a neater output
+# not necessary, but nice for debugging
 def make_pretty(directory: str):
     for filename in os.listdir(directory):
         if os.path.isdir(os.path.join(directory, filename)):
@@ -66,6 +77,7 @@ def make_pretty(directory: str):
             f.close()
 
 
+# create new mutation section with 3 problem types
 def new_section(set: pg.ProblemSet):
     if not os.path.isdir("package/items/" + set.mutation.id):
         os.mkdir("package/items/" + set.mutation.id)
@@ -78,10 +90,13 @@ def new_section(set: pg.ProblemSet):
     multiple_choice(set, "fixMutation")
 
 
+# imsmanifest.xml and assessment.xml are both used to store meta data about the quiz, so 
+# this function does just that
 def add_dependencies(set: pg.ProblemSet):
     manifest = md.parse("package/imsmanifest.xml")
     ids = ["FindMutation", "ClassifyMutation", "FixMutation"]
 
+    ######################## ADD TO IMSMANIFEST.XML ########################
     for id in ids:
         resource = manifest.createElement("resource")
         mhref = manifest.createElement("file")
@@ -106,7 +121,9 @@ def add_dependencies(set: pg.ProblemSet):
     f = open("package/imsmanifest.xml", "w")
     f.write(manifest.toxml())
     f.close()
+    ########################################################################
 
+    ######################## ADD TO ASSESSMENT.XML #########################
     assessment = md.parse("package/assessment.xml")
     testPart = assessment.getElementsByTagName("testPart")[0]
 
@@ -128,8 +145,13 @@ def add_dependencies(set: pg.ProblemSet):
     f = open("package/assessment.xml", "w")
     f.write(assessment.toxml())
     f.close()
+    ########################################################################
 
+# create the parsons problem using the QTI ordering question style
 def make_parsons(question: pg.Parson):
+    # adding adding dependencies for parsons problem done separately
+
+    ############################ ADD DEPENDENCIES ##########################
     manifest = md.parse("package/imsmanifest.xml")
 
     resource = manifest.createElement("resource")
@@ -169,7 +191,9 @@ def make_parsons(question: pg.Parson):
     f = open("package/assessment.xml", "w")
     f.write(assessment.toxml())
     f.close()
+    ########################################################################
 
+    # copy parsons problem template into new file
     newfile = "package/Parsons.xml"
     fr = open("templates/canvas/parsons.xml", "r")
     fw = open(newfile, "w")
@@ -178,14 +202,18 @@ def make_parsons(question: pg.Parson):
     fr.close()
     fw.close()
 
+    # question title
     file : md.Document = md.parse(newfile)
     file.getElementsByTagName("assessmentItem")[0].setAttribute(
         "title", question.id + " Parsons Problem"
     )
+    # question prompt
     file.getElementsByTagName("prompt")[0].appendChild(
         file.createTextNode(question.prompt)
     )
 
+    # add each line of file to XML Ordering Question, with identifier to 
+    # keep track of order
     orderIDs = file.getElementsByTagName("correctResponse")[0]
     orderLines = file.getElementsByTagName("orderInteraction")[0]
     for i, group in enumerate(question.answer.linegroups):
@@ -214,12 +242,16 @@ def make_parsons(question: pg.Parson):
         orderIDs.appendChild(orderID)
         orderLines.appendChild(orderLine)
 
+    # write changes
     f = open(newfile, "w")
     f.write(file.toxml())
     f.close()
 
 
+# for mutation problems we generate 3 MC questions per mutation, this
+# function is called 3 times for each mutation with different question types
 def multiple_choice(set: pg.ProblemSet, mc_field: str) -> None:
+    # depending on the question type, we want the title and file to differ
     match mc_field:
         case "findMutation":
             field: pg.Question = set.findMutation
@@ -237,6 +269,7 @@ def multiple_choice(set: pg.ProblemSet, mc_field: str) -> None:
             print("unreachable")
             return
 
+    # copy template into new file
     newfile = "package/items/" + set.mutation.id + "/" + set.id + "/" + filename
     fr = open("templates/canvas/mc.xml", "r")
     fw = open(newfile, "w")
@@ -247,12 +280,15 @@ def multiple_choice(set: pg.ProblemSet, mc_field: str) -> None:
 
     file = md.parse(newfile)
 
+    # tilte
     file.getElementsByTagName("assessmentItem")[0].setAttribute(
         "title", set.id + title
     )
+    # question ID
     file.getElementsByTagName("assessmentItem")[0].setAttribute(
         "identifier", set.mutation.id + set.id
     )
+    # prompt
     prompt = file.getElementsByTagName("prompt")[0]
     show_code(file, prompt, set.content)
     prompt.appendChild(file.createTextNode(field.prompt))
@@ -274,11 +310,13 @@ def multiple_choice(set: pg.ProblemSet, mc_field: str) -> None:
         wrong.appendChild(file.createTextNode(distractor))
         choices.appendChild(wrong)
 
+    # write changes
     f = open(newfile, "w")
     f.write(file.toxml())
     f.close()
 
 
+# displays code of file in question as code, instead of Canvas's default font
 def show_code(file: md.Document, element: md.Element, content: LineGroup):
     orderPar : md.Element = file.createElement("")
     orderCode : md.Element = file.createElement("")
@@ -292,20 +330,3 @@ def show_code(file: md.Document, element: md.Element, content: LineGroup):
             orderPar.appendChild(orderPre)
             element.appendChild(orderPar)
         element.appendChild(file.createElement("p"))
-
-def set_line(file: md.Document, element : md.Element, line):
-    orderPar : md.Element = file.createElement("")
-    orderCode : md.Element = file.createElement("")
-    for c in line.comment:
-        orderPar = file.createElement("p")
-        orderCode = file.createElement("code")
-        orderCode.appendChild(file.createTextNode(c))
-        orderPar.appendChild(orderCode)
-        element.appendChild(orderPar)
-
-    orderPar = file.createElement("p")
-    orderCode = file.createElement("code")
-    orderCode.appendChild(file.createTextNode(line.code))
-    orderPar.appendChild(orderCode)
-    element.appendChild(orderPar)
-    print(element)

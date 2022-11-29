@@ -5,13 +5,18 @@ from typing import Dict, List
 from replacement import Replacement
 
 
+# class to locate simple patterns in file to run mutations on
 class SimplePattern:
     def __init__(self, replacement_patterns: Dict[str, List[str]]) -> None:
         self.replacement_patterns = replacement_patterns
 
+    # take a line and return all possible replacements for that line
     def mutate(self, line: str) -> List[Replacement]:
         result: List[Replacement] = []
 
+        # for each possible replacement mutation, check to see if the regex
+        # pattern is in the line...
+        # if so, add the replacement to our list of replacements and return
         for replacement_pattern in self.replacement_patterns.keys():
             for occurrence in [
                 match for match in re.finditer(re.compile(replacement_pattern), line)
@@ -28,10 +33,16 @@ class SimplePattern:
 
         return result
 
+    # for printing
     def __repr__(self) -> str:
         return str(self.replacement_patterns)
 
 
+# Mutator superclass (doesn't really do anything)
+# all mutation classes derive from this and do different things
+
+# all mutator classes after this are pretty self explanatory
+# tho, so comments would be a little redundant
 class Mutator:
     mutator_id = "mutator"
     description = "generic mutator"
@@ -49,7 +60,6 @@ class LineDeletion(Mutator):
     def __init__(self):
         pass
 
-    # noinspection PyMethodMayBeStatic
     def find_mutations(self, line: str) -> List[Replacement]:
         return [Replacement(0, len(line) - 1, line, "")]
 
@@ -286,7 +296,7 @@ class DecimalNumberLiteral(Mutator):
                     Replacement(
                         start_col=occurrence.start(1),
                         end_col=occurrence.end(1),
-                        old_val=line[occurrence.start(1) : occurrence.end(1)],
+                        old_val=line[occurrence.start(1):occurrence.end(1)],
                         new_val=str(replacement),
                     )
                 )
@@ -321,7 +331,7 @@ class HexNumberLiteral(Mutator):
                     Replacement(
                         start_col=occurrence.start(),
                         end_col=occurrence.end(),
-                        old_val=line[occurrence.start() : occurrence.end()],
+                        old_val=line[occurrence.start():occurrence.end()],
                         new_val=hex(replacement),
                     )
                 )
@@ -348,6 +358,9 @@ class IteratorRange(Mutator):
         return self.pattern.mutate(line)
 
 
+# returns all possible mutations that we can currently run
+# if you want to add your own mutator, make sure to add it's 
+# constructor in the mutators list
 def get_mutators():
     mutators: List[Mutator] = [
         # LineDeletionMutator(),

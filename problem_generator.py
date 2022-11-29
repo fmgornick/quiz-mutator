@@ -9,6 +9,7 @@ from quiz_meta import QuizMeta
 from replacement import reverse_rep
 
 
+# Quiz object created from metadata
 class Quiz:
     def __init__(self, file: File, meta: QuizMeta):
         self.type = meta.type
@@ -18,7 +19,6 @@ class Quiz:
                 self.question = Parson(file, meta.reorder_prompt)
             case "mutation":
                 prompts: Dict[str, str] = {
-                    "reorder": meta.reorder_prompt,
                     "find mutation": meta.find_mutation_prompt,
                     "classify mutation": meta.classify_mutation_prompt,
                     "fix mutation": meta.fix_mutation_prompt,
@@ -35,22 +35,10 @@ class Quiz:
 def get_distractors(mutation: Mutation, others: List[Mutation], num_distractors: int) -> List[Mutation]:
     mutation_distractors: List[Mutation] = []
     ids: List[str] = []
-    # unused_lines = copy.deepcopy(file.content)
-
-    # for mut in sorted(file.mutations, key=lambda _: random.random()):
-    #     if len(mutation_distractors) == mc_opts:
-    #         break
-    #     else:
-    #         mutation_distractors.append(mut)
 
     # add multiple choice distractors to our problem
     # make sure no two distractors are the same
     while len(mutation_distractors) < num_distractors + 1:
-        # d = random_mutation(unused_lines, mutation_distractors)
-        # for mut in mutation_distractors:
-        #     if d.after != mut.after:
-        #         mutation_distractors.append(d)
-        
         d = random.choice(list(others))
         if d != mutation:
             if d.id not in ids:
@@ -60,6 +48,7 @@ def get_distractors(mutation: Mutation, others: List[Mutation], num_distractors:
     return mutation_distractors
 
 
+# for mutation questions, we have a set of 3 questions for each mutation
 class ProblemSet:
     def __init__(
         self,
@@ -75,17 +64,20 @@ class ProblemSet:
         self.content[mutation.num].code = mutation.after
         self.distractors = get_distractors(mutation, file.potential_distractors, num_distractors)
 
-        # self.order = Reorder(self.content, mutation, mutation_num, prompts["reorder"])
         self.findMutation = FindMutation(file, mutation, mutation_num, prompts["find mutation"], self.distractors)
         self.classifyMutation = ClassifyMutation(mutation, mutation_num, prompts["classify mutation"], self.distractors)
         self.fixMutation = FixMutation(mutation, mutation_num, prompts["fix mutation"], self.distractors)
 
 
+# Question parent class (4 child classes: Parson, FindMutation, FixMutation, ClassifyMutation)
+# each question has an ID, prompt, and answer (non parsons problems also have MC distractors)
 class Question:
     problem_type = "generic"
     prompt = "generic question prompt"
 
 
+# parsons problem, just a reorder question
+# answer is just the grouping of lines in the correct order
 class Parson(Question):
     def __init__( self, file: File, prompt: str):
         self.id = Path(file.filename).stem.capitalize()
@@ -93,20 +85,7 @@ class Parson(Question):
         self.prompt = prompt
         self.answer = file.content
 
-class Reorder(Question):
-    def __init__(
-        self,
-        content: List[str],
-        mutation: Mutation,
-        mutation_num: int,
-        prompt: str,
-    ):
-        self.problem_id = "reorder" + mutation.id.capitalize() + str(mutation_num)
-        self.problem_type = "reorder"
-        self.prompt = prompt
-        self.answer = content
-
-
+# find mutation question: asks which line contains the mutation
 class FindMutation(Question):
     def __init__(
         self,
@@ -133,6 +112,7 @@ class FindMutation(Question):
             self.distractors.pop()
 
 
+# classify mutation question: asks what type of mutation was run on this line
 class ClassifyMutation(Question):
     def __init__(
         self,
@@ -157,6 +137,7 @@ class ClassifyMutation(Question):
             self.distractors.pop()
 
 
+# fix mutation question: asks what change needs to be made to fix the mutation
 class FixMutation(Question):
     def __init__(
         self,

@@ -1,3 +1,18 @@
+# CLASS: QuizMeta: Gathers quiz info for creating output file
+#        - questions depend on if it's a parsons or mutation quiz
+
+# PARSONS  - quiz title
+#            output file
+#            parsons prompt
+
+# MUTATION - quiz title
+#            output file
+#            reorder prompt
+#            find mutation prompt
+#            classify mutation prompt
+#            fix mutation prompt
+#            max number of mutations
+#            number of distractors for MC questions
 class QuizMeta:
     def __init__(
         self,

@@ -29,6 +29,8 @@ class Mutation:
         )
 
 
+# returns exact opposite mutation
+# used for generating multiple choice distractors
 def reverse_mut(m: Mutation) -> Mutation:
     return Mutation(
         mutator_id=m.id,

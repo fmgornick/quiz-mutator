@@ -9,6 +9,7 @@ from mutator import get_mutators
 from quiz_meta import QuizMeta
 
 
+# may be used to add syntax highlighting to code in quizzes
 class ExtMeta:
     def __init__(self, filename: str):
         ext: str = filename.split(".")[-1]
@@ -55,6 +56,8 @@ class File:
 
         content: List[Line] = []
 
+        # check if file exists
+        # if so, delete leading whitespace and group comments in self.content
         if not os.path.exists(filename):
             print("ERROR: file not found")
 
@@ -70,8 +73,11 @@ class File:
         except FileNotFoundError:
             print(filename + " doesn't exist")
 
+        # group user chosen lines as well (with restrictions)
         self.content = group_lines(content)
 
+        # for mutation problems, add mutation object for each possible mutation 
+        # on each line
         if meta.type == "mutation":
             for line_num, line in enumerate(content):
                 for mutator_id, mutator in get_mutators().items():
@@ -85,9 +91,11 @@ class File:
                                 replacement=replacement,
                             )
                         )
+            # add fake mutations for MC distractors
             for mut in self.mutations:
                 self.potential_distractors.append(mut)
 
+            # prune unneeded mutations
             while len(self.mutations) > meta.max_mutations:
                 self.mutations.pop(random.randrange(len(self.mutations)))
 
