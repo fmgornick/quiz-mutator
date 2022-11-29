@@ -12,6 +12,19 @@ class Line:
         self.comment = comment
         self.numlines = len(comment) + 1
 
+        self.content = comment
+        self.content.append(code)
+
+    def __getitem__(self, idx: int) -> str:
+        if idx >= 0 and idx < len(self.comment):
+            return self.comment[idx]
+
+        elif idx == len(self.comment):
+            return self.code
+
+        else:
+            raise IndexError
+
     def __repr__(self) -> str:
         line = ""
         for c in self.comment:
@@ -25,11 +38,13 @@ class Line:
 class LineGroup:
     def __init__(self, lines: List[Line], groupings: List[List[int]]):
         self.linegroups: List[List[Line]] = []
+        self.length = 0
 
         for i, group in enumerate(groupings):
             self.linegroups.append([])
             for line_num in group:
                 self.linegroups[i].append(lines[line_num])
+                self.length += 1
 
     # need to overwrite the index operator to return a line instead of
     # a list of lines
