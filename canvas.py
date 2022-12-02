@@ -226,18 +226,12 @@ def make_parsons(question: pg.Parson):
         orderPar : md.Element = file.createElement("")
         orderCode : md.Element = file.createElement("")
         for line in group:
-            for c in line.comment:
+            for l in line.content:
                 orderPar = file.createElement("p")
                 orderCode = file.createElement("code")
-                orderCode.appendChild(file.createTextNode(c))
+                orderCode.appendChild(file.createTextNode(l))
                 orderPar.appendChild(orderCode)
                 orderLine.appendChild(orderPar)
-
-            orderPar = file.createElement("p")
-            orderCode = file.createElement("code")
-            orderCode.appendChild(file.createTextNode(line.code))
-            orderPar.appendChild(orderCode)
-            orderLine.appendChild(orderPar)
 
         orderIDs.appendChild(orderID)
         orderLines.appendChild(orderLine)
