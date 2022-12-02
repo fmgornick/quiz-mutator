@@ -67,6 +67,7 @@ class File:
 
             for line in self.__get_lines():
                 content.append(line)
+            print(content)
 
             f.close()
 
@@ -140,7 +141,7 @@ class File:
                 continue
 
             if stripped.endswith("{"):
-                bracket_lines.append(stripped)
+                bracket_lines.append(stripped[:-1])
 
             if stripped == "{" and nested_comments == 0:
                 bracket_lines.append(prev_line)
@@ -156,7 +157,6 @@ class File:
 
             # return line to mutate
             if nested_comments == 0:
-                # print(stripped)
                 temp = copy.deepcopy(comment)
                 comment.clear()
                 yield Line(line, temp)
