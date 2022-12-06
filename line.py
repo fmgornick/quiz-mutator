@@ -1,3 +1,4 @@
+import copy
 import os
 from typing import List
 
@@ -12,8 +13,10 @@ class Line:
         self.comment = comment
         self.numlines = len(comment) + 1
 
-        self.content = comment
-        self.content.append(code)
+        self.content = []
+        for line in comment:
+            self.content.append(copy.deepcopy(line))
+        self.content.append(copy.deepcopy(self.code))
 
     def __getitem__(self, idx: int) -> str:
         if idx >= 0 and idx < len(self.comment):

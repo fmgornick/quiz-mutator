@@ -9,8 +9,10 @@ from mutator import get_mutators
 from quiz_meta import QuizMeta
 
 
-# may be used to add syntax highlighting to code in quizzes
 class ExtMeta:
+    '''
+    may be used to add syntax highlighting to code in quizzes
+    '''
     def __init__(self, filename: str):
         ext: str = filename.split(".")[-1]
         match ext:
@@ -42,12 +44,14 @@ class ExtMeta:
 
 
 
-# contains:
-# - name of inputted file
-# - every line of the file
-# - trimmed content of the file (removing comments)
-# - list of all possible mutations that can be performed on content
 class File:
+    '''
+    contains:
+    - name of inputted file
+    - every line of the file
+    - trimmed content of the file (removing comments)
+    - list of all possible mutations that can be performed on content
+    '''
     def __init__(self, filename: str, meta: QuizMeta):
         self.filename: str = filename
         self.content: LineGroup
@@ -66,8 +70,8 @@ class File:
             self.full_content = [x.rstrip() for x in f.read().splitlines()]
 
             for line in self.__get_lines():
+                print(line)
                 content.append(line)
-            print(content)
 
             f.close()
 
@@ -100,8 +104,10 @@ class File:
             while len(self.mutations) > meta.max_mutations:
                 self.mutations.pop(random.randrange(len(self.mutations)))
 
-    # only retrieve lines contatining important stuff
     def __get_lines(self) -> Generator[Line, None, None]:
+        '''
+        only retrieve lines contatining important stuff
+        '''
         # for tracking nested comments
         comment_type = ExtMeta(self.filename).comment
         nested_comments: int = 0
@@ -157,15 +163,16 @@ class File:
 
             # return line to mutate
             if nested_comments == 0:
-                temp = copy.deepcopy(comment)
+                ret_comment = copy.deepcopy(comment)
                 comment.clear()
-                yield Line(line, temp)
+                yield Line(line, ret_comment)
 
 
-# contains:
-# - contents of mutated file
-# - info about mutation
 class MutatedFile:
+    '''
+    contains:
+    - contents of mutated file
+    '''
     def __init__(self, filename: str, content: List[str], mut: Mutation):
         self.filename = filename
         self.content = copy.deepcopy(content)
